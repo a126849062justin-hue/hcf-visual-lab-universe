@@ -78,7 +78,8 @@
   .pricing-head{ max-width:680px; }
   .pricing-title{ font-size:clamp(1.8rem,5vw,3rem); font-weight:700; color:#fff; margin:.3rem 0 .8rem; letter-spacing:-.01em; }
   .pricing-sub{ font-size:clamp(.9rem,1.5vw,1.05rem); color:#9fb0d6; font-weight:300; line-height:1.8; margin-bottom:2.2rem; }
-  .pgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1.1rem; width:100%; max-width:1180px; }
+  .pgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1.1rem; width:100%; max-width:1180px;
+    perspective:1300px; perspective-origin:50% 32%; }
   .pcard{ pointer-events:auto; position:relative; text-align:left; display:flex; flex-direction:column;
     background:linear-gradient(165deg, rgba(14,18,30,.82), rgba(8,10,18,.72)); backdrop-filter:blur(10px);
     border:1px solid rgba(140,170,230,.16); border-radius:18px; padding:1.7rem 1.4rem 1.5rem;
@@ -101,6 +102,20 @@
     transition:background .35s, transform .35s, box-shadow .35s; }
   .pcard .pcta:hover{ background:color-mix(in srgb, var(--pc) 24%, transparent); box-shadow:0 0 26px color-mix(in srgb, var(--pc) 35%, transparent); transform:translateY(-2px); }
   .pricing-foot{ margin-top:1.8rem; font-size:.68rem; color:#6f7fa0; letter-spacing:.03em; }
+  /* 方案星站沉浸式進場：卡片從深空 warp-in、標題上升 */
+  #pricing:not(.in) .pcard,#pricing:not(.in) .pricing-head{ opacity:0; }
+  .chapter#pricing.in .pricing-head{ animation:pHead .9s cubic-bezier(.2,.7,.2,1) both; }
+  .chapter#pricing.in .pcard{ animation:pWarp .85s cubic-bezier(.2,.7,.2,1) both; transform-style:preserve-3d; }
+  .chapter#pricing.in .pcard:nth-child(1){ animation-delay:.28s } .chapter#pricing.in .pcard:nth-child(2){ animation-delay:.41s }
+  .chapter#pricing.in .pcard:nth-child(3){ animation-delay:.54s } .chapter#pricing.in .pcard:nth-child(4){ animation-delay:.67s }
+  @keyframes pHead{ 0%{ opacity:0; transform:translateY(26px); filter:blur(4px); } 100%{ opacity:1; transform:none; filter:none; } }
+  @keyframes pWarp{
+    0%{ opacity:0; transform:translateY(64px) translateZ(-360px) rotateX(24deg) scale(.94); filter:blur(9px); }
+    55%{ filter:blur(0); }
+    100%{ opacity:1; transform:none; filter:none; } }
+  @media (prefers-reduced-motion:reduce){
+    .chapter#pricing.in .pcard,.chapter#pricing.in .pricing-head{ animation:none; }
+    #pricing:not(.in) .pcard,#pricing:not(.in) .pricing-head{ opacity:1; } }
   /* 進度條 + 章節導引 */
   #bar{ position:fixed; left:0; top:0; height:2px; width:0;
     background:linear-gradient(90deg,var(--cyan),var(--purple)); z-index:8; box-shadow:0 0 14px var(--cyan); }
@@ -731,6 +746,15 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){
   e.target.classList.add('in'); const st=e.target.dataset.stage; if(st) stageEl.textContent=st;
 }}),{threshold:.4});
 chapters.forEach(c=>io.observe(c));
+// 原生 scroll 後援：保證任何章節進視窗就揭露（不依賴 IO 是否觸發），並更新階段標
+function revealOnScroll(){
+  const vh=innerHeight; let active=null;
+  for(const c of chapters){ const r=c.getBoundingClientRect();
+    if(r.top < vh*0.8 && r.bottom > vh*0.2){ c.classList.add('in'); if(!active) active=c; } }
+  if(active && active.dataset.stage) stageEl.textContent=active.dataset.stage;
+}
+addEventListener('scroll', revealOnScroll, {passive:true});
+revealOnScroll();
 
 // ── 主迴圈 ──
 const clockT=new THREE.Clock();
@@ -793,14 +817,19 @@ function animate(time){
   gateGlow.material.opacity = (0.25 + cmd*0.75) * (0.85+Math.sin(clock*1.4)*0.15);
   gateGlow.scale.setScalar(24 + Math.sin(clock*0.9)*1.5 + cmd*4);
 
-  // 方案星站：核心殼自轉、環反向、輕微漂浮脈動
+  // 方案星站：自轉/漂浮 + 接近供電（鏡頭越近越亮、環越快、核心脹大脈動）
   stations.forEach(st=>{
-    st.userData.shell.rotation.y += dt*st.userData.spin;
+    const near = THREE.MathUtils.clamp(1 - (camera.position.distanceTo(st.position) - 14) / 44, 0, 1);
+    const pulse2 = 0.85 + Math.sin(clock*1.4 + st.userData.drift)*0.15;
+    st.userData.shell.rotation.y += dt*st.userData.spin*(1+near);
     st.userData.shell.rotation.x += dt*st.userData.spin*0.4;
-    st.userData.ring.rotation.z += dt*0.4;
+    st.userData.ring.rotation.z += dt*(0.4 + near*1.6);
     st.rotation.y += dt*0.15;
     st.position.y += Math.sin(clock*0.6 + st.userData.drift)*dt*0.4;
-    st.userData.glow.material.opacity = 0.4 + Math.sin(clock*1.2 + st.userData.drift)*0.12;
+    st.userData.glow.material.opacity = (0.18 + near*0.7) * pulse2;
+    st.userData.glow.scale.setScalar(8 + near*5);
+    st.userData.ring.material.opacity = 0.35 + near*0.5;
+    st.scale.setScalar(1 + near*0.18*pulse2);
   });
 
   // 鏡頭沿軌道（捲動驅動）+ 視差 / 聚焦星球
