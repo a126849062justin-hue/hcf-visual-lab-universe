@@ -108,6 +108,10 @@
     transition:background .35s, transform .35s, box-shadow .35s; }
   .pcard .pcta:hover{ background:color-mix(in srgb, var(--pc) 24%, transparent); box-shadow:0 0 26px color-mix(in srgb, var(--pc) 35%, transparent); transform:translateY(-2px); }
   .pricing-foot{ margin-top:1.8rem; font-size:.68rem; color:#6f7fa0; letter-spacing:.03em; }
+  /* 卡片↔太空站 能量光束（全息投射連線） */
+  #beams{ position:fixed; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; display:none; }
+  #beams .beam-flow{ animation:beamFlow 1.1s linear infinite; }
+  @keyframes beamFlow{ to{ stroke-dashoffset:-24; } }
   /* 方案星站沉浸式進場：標題隨 section 進場上升；卡片等「網格本身」進視窗才 warp-in */
   #pricing:not(.in) .pricing-head{ opacity:0; }
   .chapter#pricing.in .pricing-head{ animation:pHead .9s cubic-bezier(.2,.7,.2,1) both; }
@@ -771,6 +775,24 @@ revealOnScroll();
 const cardIO=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('warp'); }), {threshold:0.25});
 pcardEls.forEach(c=>cardIO.observe(c));
 
+// 卡片↔太空站 能量光束：每張卡拉一道發光連線到背景對應顏色的太空站（全息投射感）
+const SVGNS='http://www.w3.org/2000/svg';
+const beamSvg=document.createElementNS(SVGNS,'svg'); beamSvg.id='beams'; beamSvg.setAttribute('aria-hidden','true');
+const beamDefs=document.createElementNS(SVGNS,'defs');
+beamDefs.innerHTML='<filter id="bmGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.5"/></filter>';
+beamSvg.appendChild(beamDefs);
+const BEAM_COL=['#00F0FF','#7A5CFF','#FFB23E','#2BE8B0'];
+const beams=pcardEls.map((card,i)=>{
+  const col=BEAM_COL[i%4], g=document.createElementNS(SVGNS,'g'); g.style.opacity='0';
+  const mk=(tag,attrs)=>{ const el=document.createElementNS(SVGNS,tag); for(const k in attrs) el.setAttribute(k,attrs[k]); return el; };
+  const glow=mk('line',{stroke:col,'stroke-width':6,'stroke-linecap':'round',opacity:.16,filter:'url(#bmGlow)'});
+  const core=mk('line',{stroke:col,'stroke-width':1.5,'stroke-linecap':'round','stroke-dasharray':'2 12'}); core.classList.add('beam-flow');
+  const node=mk('circle',{r:3.4,fill:col}); const node2=mk('circle',{r:7,fill:col,opacity:.3});
+  g.append(glow,core,node2,node); beamSvg.appendChild(g);
+  return {g,glow,core,node,node2,card};
+});
+document.body.insertBefore(beamSvg, document.getElementById('scroll'));
+
 // 沉浸式：方案卡 3D 視差傾斜 + 游標光澤（懸浮全息面板感，僅真實游標裝置）
 if(matchMedia('(hover:hover) and (pointer:fine)').matches){
   pcardEls.forEach(card=>{
@@ -869,6 +891,24 @@ function animate(time){
     st.userData.glow.scale.setScalar(8 + near*5);
     st.scale.setScalar((1 + near*0.18*pulse2) * rvStations);
   });
+
+  // 卡片↔太空站 能量光束：連卡片中心到對應太空站的投影位置（僅 Pricing 段顯示）
+  if(rvStations > 0.02){
+    beamSvg.style.display='';
+    for(let i=0;i<beams.length;i++){
+      const b=beams[i], r=b.card.getBoundingClientRect();
+      proj.copy(stations[i].position).project(camera);
+      const onScreen = r.bottom>0 && r.top<innerHeight && proj.z<1;
+      if(onScreen){
+        const cx=r.left+r.width/2, cy=r.top+r.height/2;
+        const sx=(proj.x*0.5+0.5)*innerWidth, sy=(-proj.y*0.5+0.5)*innerHeight;
+        b.glow.setAttribute('x1',cx); b.glow.setAttribute('y1',cy); b.glow.setAttribute('x2',sx); b.glow.setAttribute('y2',sy);
+        b.core.setAttribute('x1',cx); b.core.setAttribute('y1',cy); b.core.setAttribute('x2',sx); b.core.setAttribute('y2',sy);
+        b.node.setAttribute('cx',sx); b.node.setAttribute('cy',sy); b.node2.setAttribute('cx',sx); b.node2.setAttribute('cy',sy);
+        b.g.style.opacity=(rvStations*0.85).toFixed(2);
+      } else b.g.style.opacity='0';
+    }
+  } else if(beamSvg.style.display!=='none'){ beamSvg.style.display='none'; }
 
   // 鏡頭沿軌道（捲動驅動）+ 視差 / 聚焦星球
   const t=Math.min(prog,0.999);
