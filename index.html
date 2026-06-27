@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HCF Visual Lab · Immersive Digital Universe</title>
+<style>
+  :root{ --space:#050505; --cyan:#00F0FF; --purple:#7A5CFF; --ink:#dfe8ff; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ color:var(--ink); font-family:ui-sans-serif,system-ui,"Noto Sans TC",sans-serif; background:var(--space); }
+  body{ background:radial-gradient(120% 120% at 50% 40%, #0a0a16 0%, #050505 60%, #000 100%); }
+  #scene{ position:fixed; inset:0; z-index:0; }
+  #scroll{ position:relative; z-index:1; }
+  .chapter{
+    height:100vh; display:flex; flex-direction:column; justify-content:center;
+    padding:0 9vw; pointer-events:none;
+  }
+  .chapter:nth-child(even){ align-items:flex-end; text-align:right; }
+  .chapter h2{
+    font-size:clamp(2.2rem,6.5vw,5.4rem); line-height:1.04; letter-spacing:-.01em; font-weight:700;
+    color:#fff; opacity:0; transform:translateY(40px);
+    text-shadow:0 0 60px rgba(0,240,255,.22);
+    transition:opacity 1s cubic-bezier(.2,.7,.2,1), transform 1s cubic-bezier(.2,.7,.2,1);
+  }
+  .chapter h2 .accent{ color:transparent; background:linear-gradient(120deg,var(--cyan),var(--purple)); -webkit-background-clip:text; background-clip:text; }
+  .chapter p{
+    margin-top:1.3rem; max-width:36ch; font-size:clamp(.95rem,1.5vw,1.12rem);
+    color:#9fb0d6; line-height:1.85; font-weight:300;
+    opacity:0; transform:translateY(30px); transition:opacity 1.1s ease .15s, transform 1.1s ease .15s;
+  }
+  .chapter.in h2,.chapter.in p{ opacity:1; transform:none; }
+  .badge{ font-size:.72rem; letter-spacing:.5em; text-transform:uppercase;
+    color:var(--cyan); opacity:.9; margin-bottom:1.2rem; }
+  .num{ font-variant-numeric:tabular-nums; opacity:.5; }
+  /* CTA */
+  .cta-wrap{ margin-top:2.4rem; pointer-events:auto; opacity:0; transform:translateY(30px);
+    transition:opacity 1.1s ease .3s, transform 1.1s ease .3s; }
+  .chapter.in .cta-wrap{ opacity:1; transform:none; }
+  .cta{ display:inline-flex; align-items:center; gap:.8rem; padding:.95rem 2.1rem;
+    border:1px solid rgba(0,240,255,.4); border-radius:100px; color:#fff;
+    font-size:.82rem; letter-spacing:.22em; text-transform:uppercase; text-decoration:none;
+    background:rgba(0,240,255,.04); backdrop-filter:blur(6px);
+    transition:background .4s, border-color .4s, box-shadow .4s, transform .4s; }
+  .cta:hover{ background:rgba(0,240,255,.12); border-color:var(--cyan); box-shadow:0 0 40px rgba(0,240,255,.35); transform:translateY(-2px); }
+  .cta .arrow{ transition:transform .4s; } .cta:hover .arrow{ transform:translateX(5px); }
+  /* 進度條 + 章節導引 */
+  #bar{ position:fixed; left:0; top:0; height:2px; width:0;
+    background:linear-gradient(90deg,var(--cyan),var(--purple)); z-index:8; box-shadow:0 0 14px var(--cyan); }
+  #brand{ position:fixed; left:30px; top:24px; z-index:8; font-size:.74rem; letter-spacing:.32em;
+    text-transform:uppercase; color:#fff; pointer-events:none; }
+  #brand b{ font-weight:700; } #brand span{ color:var(--cyan); opacity:.8; }
+  #stage{ position:fixed; right:30px; top:24px; z-index:8; font-size:.66rem; letter-spacing:.3em;
+    text-transform:uppercase; color:#8fa0c6; pointer-events:none; transition:color .4s; }
+  #hint{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%); z-index:8;
+    font-size:.64rem; letter-spacing:.36em; text-transform:uppercase; color:#8fa0c699;
+    animation:fade 2.6s ease-in-out infinite; }
+  @keyframes fade{ 0%,100%{opacity:.2} 50%{opacity:.85} }
+  /* 服務星球：游標懸停資訊卡（跟隨星球投影位置） */
+  #planet-card{ position:fixed; z-index:7; pointer-events:none; opacity:0; transform:translate(-50%,-50%) scale(.9);
+    transition:opacity .35s ease, transform .35s ease; will-change:transform,opacity; }
+  #planet-card.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  #planet-card .pc-inner{ min-width:210px; padding:1rem 1.2rem; border-radius:14px;
+    background:rgba(8,12,22,.66); backdrop-filter:blur(10px); border:1px solid var(--pc, rgba(0,240,255,.5));
+    box-shadow:0 0 36px var(--pcGlow, rgba(0,240,255,.25)); }
+  #planet-card .pc-en{ font-size:.62rem; letter-spacing:.34em; text-transform:uppercase; color:var(--pc,#00F0FF); }
+  #planet-card .pc-zh{ font-size:1.3rem; font-weight:700; color:#fff; margin:.25rem 0 .55rem; }
+  #planet-card .pc-tag{ font-size:.78rem; color:#9fb0d6; line-height:1.6; font-weight:300; }
+  #planet-card .pc-go{ margin-top:.7rem; font-size:.62rem; letter-spacing:.28em; text-transform:uppercase; color:#fff; opacity:.7; }
+  /* 服務詳情面板（點擊星球開啟） */
+  #detail{ position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    padding:6vh 6vw; pointer-events:none; opacity:0; transition:opacity .5s ease; }
+  #detail.open{ opacity:1; pointer-events:auto; }
+  #detail .d-bg{ position:absolute; inset:0; background:rgba(3,5,10,.55); backdrop-filter:blur(4px); }
+  #detail .d-card{ position:relative; max-width:560px; width:100%; padding:2.6rem 2.8rem; border-radius:20px;
+    background:linear-gradient(160deg, rgba(14,18,30,.92), rgba(8,10,18,.92));
+    border:1px solid var(--dc,rgba(0,240,255,.5)); box-shadow:0 0 80px var(--dcGlow,rgba(0,240,255,.3));
+    transform:translateY(24px) scale(.97); transition:transform .5s cubic-bezier(.2,.7,.2,1); }
+  #detail.open .d-card{ transform:none; }
+  #detail .d-en{ font-size:.66rem; letter-spacing:.36em; text-transform:uppercase; color:var(--dc,#00F0FF); }
+  #detail .d-zh{ font-size:2rem; font-weight:700; color:#fff; margin:.3rem 0 1rem; }
+  #detail .d-desc{ font-size:.95rem; color:#aeb9d6; line-height:1.85; font-weight:300; margin-bottom:1.6rem; }
+  #detail .d-list{ list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:.7rem 1.4rem; }
+  #detail .d-list li{ font-size:.86rem; color:#cdd6ec; padding-left:1.1rem; position:relative; }
+  #detail .d-list li::before{ content:"▸"; position:absolute; left:0; color:var(--dc,#00F0FF); }
+  #detail .d-close{ position:absolute; top:1.1rem; right:1.3rem; width:34px; height:34px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.2); color:#fff; background:none; cursor:none; font-size:1rem;
+    display:flex; align-items:center; justify-content:center; transition:background .3s, border-color .3s; }
+  #detail .d-close:hover{ background:rgba(255,255,255,.1); border-color:#fff; }
+  @media (max-width:600px){ #detail .d-list{ grid-template-columns:1fr; } #detail .d-card{ padding:2rem 1.6rem; } }
+  /* Lusion 風框架 */
+  html,body{ cursor:none; }
+  #frame{ position:fixed; inset:14px; border:1px solid rgba(120,150,220,.16); border-radius:20px; z-index:6; pointer-events:none; }
+  .corner{ position:fixed; z-index:6; pointer-events:none; font:300 16px/1 ui-sans-serif,system-ui,sans-serif; color:rgba(140,170,230,.4); }
+  .corner.tl{ left:26px; top:24px } .corner.tr{ right:26px; top:24px }
+  .corner.bl{ left:26px; bottom:24px } .corner.br{ right:26px; bottom:24px }
+  #cursor-dot{ position:fixed; left:0; top:0; z-index:30; width:6px; height:6px; margin:-3px 0 0 -3px;
+    border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan); pointer-events:none; }
+  #cursor-ring{ position:fixed; left:0; top:0; z-index:30; width:32px; height:32px; margin:-16px 0 0 -16px;
+    border:1.5px solid rgba(0,240,255,.45); border-radius:50%; pointer-events:none;
+    transition:width .22s, height .22s, margin .22s, border-color .22s; }
+  #cursor-ring.down{ width:52px; height:52px; margin:-26px 0 0 -26px; border-color:var(--cyan); }
+  @media (pointer:coarse){ html,body{cursor:auto} #cursor-dot,#cursor-ring{display:none} }
+  html.lenis,html.lenis body{ height:auto; }
+  .lenis.lenis-smooth{ scroll-behavior:auto !important; }
+  .lenis.lenis-stopped{ overflow:hidden; }
+</style>
+</head>
+<body>
+  <div id="bar"></div>
+  <canvas id="scene"></canvas>
+  <div id="frame"></div>
+  <span class="corner tl">+</span><span class="corner tr">+</span>
+  <span class="corner bl">+</span><span class="corner br">+</span>
+  <div id="cursor-ring"></div><div id="cursor-dot"></div>
+  <div id="brand"><b>HCF</b> VISUAL LAB <span>/ ∞</span></div>
+  <div id="stage">01 / Arrival</div>
+  <div id="hint">SCROLL ↓ 進入宇宙</div>
+
+  <!-- 服務星球懸停資訊卡 -->
+  <div id="planet-card"><div class="pc-inner">
+    <div class="pc-en"></div><div class="pc-zh"></div><div class="pc-tag"></div>
+    <div class="pc-go">點擊 · 飛入星球 →</div>
+  </div></div>
+
+  <!-- 服務詳情面板 -->
+  <div id="detail"><div class="d-bg" data-close></div>
+    <div class="d-card">
+      <button class="d-close" data-close>✕</button>
+      <div class="d-en"></div><div class="d-zh"></div>
+      <div class="d-desc"></div>
+      <ul class="d-list"></ul>
+    </div>
+  </div>
+
+  <div id="scroll">
+    <section class="chapter in" data-stage="01 / Arrival">
+      <div class="badge">HCF Visual Lab</div>
+      <h2>不只做設計<br>打造能<span class="accent">成交</span>的品牌系統</h2>
+      <p>結合品牌策略、網站設計、平面視覺與 SEO 行銷。從第一印象到實際轉換，替品牌建立完整而有力量的數位門面。</p>
+    </section>
+    <section class="chapter" data-stage="02 / About">
+      <div class="badge">About · 關於我們</div>
+      <h2>設計是品牌與市場<br>溝通最直接的<span class="accent">武器</span></h2>
+      <p>在注意力稀缺的時代，沒有辨識度就會被忽略。HCF 幫品牌從混亂中建立秩序、從普通中拉出記憶點、從流量中放大成交。</p>
+    </section>
+    <section class="chapter" data-stage="02 / About">
+      <div class="badge"><span class="num">H</span> · High-end</div>
+      <h2>高端<span class="accent">品質</span></h2>
+      <p>對標國際奢侈品標準，每一像素皆為極致工藝，讓客戶感受昂貴的專業。</p>
+    </section>
+    <section class="chapter" data-stage="02 / About">
+      <div class="badge"><span class="num">C</span> · Creative</div>
+      <h2>創意<span class="accent">重塑</span></h2>
+      <p>打破套版框架，挖掘品牌特有的商業靈魂，建立屬於你的視覺護城河。</p>
+    </section>
+    <section class="chapter" data-stage="02 / About">
+      <div class="badge"><span class="num">F</span> · Focus</div>
+      <h2>極致<span class="accent">專注</span></h2>
+      <p>不浪費受眾任何一秒，每一處視覺佈線，皆為轉化而服務。</p>
+    </section>
+    <section class="chapter" data-stage="03 / Galaxy Map">
+      <div class="badge">Service · 服務星系</div>
+      <h2>四顆星球<br>一套<span class="accent">作品星系</span></h2>
+      <p>網頁設計、品牌規劃、平面設計、SEO 行銷——靠近任一顆星球，它會旋轉發光；點擊，鏡頭飛入，展開服務細節。</p>
+      <div class="cta-wrap"><a class="cta" href="#" id="explore">探索服務星系 <span class="arrow">→</span></a></div>
+    </section>
+  </div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "lenis": "https://unpkg.com/lenis@1.1.13/dist/lenis.mjs"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import Lenis from 'lenis';
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.setClearColor(0x050505, 1);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x05070f, 0.010);
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 600);
+
+// ── 共用 GLSL 雜訊（fbm）──
+const NOISE_GLSL = `
+  float hash(vec3 p){ p=fract(p*0.3183099+0.1); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+  float noise(vec3 x){ vec3 i=floor(x); vec3 f=fract(x); f=f*f*(3.0-2.0*f);
+    return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),
+                   mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),
+                   mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z); }
+  float fbm(vec3 p){ float v=0.0,a=0.5; for(int i=0;i<5;i++){ v+=a*noise(p); p*=2.02; a*=0.5; } return v; }
+`;
+
+// ── 深空星雲穹頂 ──
+const skyUni = { uTime:{value:0} };
+const skyDome = new THREE.Mesh(
+  new THREE.SphereGeometry(400, 48, 32),
+  new THREE.ShaderMaterial({
+    side:THREE.BackSide, depthWrite:false, fog:false, toneMapped:false, uniforms:skyUni,
+    vertexShader:`varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:`
+      uniform float uTime; varying vec3 vDir;
+      ${NOISE_GLSL}
+      void main(){
+        vec3 d = normalize(vDir);
+        float n1 = fbm(d*2.2 + vec3(0.0, uTime*0.012, 0.0));
+        float n2 = fbm(d*4.5 + vec3(uTime*0.02, 0.0, uTime*0.01));
+        float neb = pow(smoothstep(0.45,0.95,n1*0.7+n2*0.5), 2.0);
+        vec3 cyan=vec3(0.0,0.62,0.85), purple=vec3(0.42,0.30,0.95);
+        vec3 col = mix(purple, cyan, n2)*neb*0.45;
+        col += vec3(0.012,0.015,0.03);
+        col *= mix(0.6,1.15, d.y*0.5+0.5);
+        gl_FragColor = vec4(col,1.0);
+      }`
+  })
+);
+skyDome.renderOrder = -2; scene.add(skyDome);
+
+// ── 燈光 ──
+scene.add(new THREE.AmbientLight(0x223052, 0.7));
+const keyL=new THREE.PointLight(0x00f0ff,60,180); keyL.position.set(14,10,18); scene.add(keyL);
+const fillL=new THREE.PointLight(0x7a5cff,50,180); fillL.position.set(-16,-8,10); scene.add(fillL);
+const rimL=new THREE.DirectionalLight(0xffffff,0.5); rimL.position.set(-1,2,3); scene.add(rimL);
+
+// ── 能量星球工廠：回傳會自轉/脈動/發光的星球（中央核心 + 服務星球共用）──
+function makePlanet(radius, colorA, colorB, detail){
+  const g = new THREE.Group();
+  const uni = { uTime:{value:0}, uPulse:{value:0}, uHi:{value:0},
+    uColA:{value:new THREE.Color(colorA)}, uColB:{value:new THREE.Color(colorB)} };
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(radius, detail),
+    new THREE.ShaderMaterial({ uniforms:uni,
+      vertexShader:`
+        uniform float uTime, uPulse, uHi; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        ${NOISE_GLSL}
+        void main(){ vP=position;
+          float disp = fbm(position*0.6 + vec3(0.0,uTime*0.15,0.0));
+          vec3 p = position + normal*(disp*radius*0.1 + (uPulse+uHi)*radius*0.07);
+          vec4 wp = modelMatrix*vec4(p,1.0);
+          vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition - wp.xyz);
+          gl_Position = projectionMatrix*viewMatrix*wp; }`.replace(/radius/g, radius.toFixed(2)),
+      fragmentShader:`
+        uniform float uTime, uPulse, uHi; uniform vec3 uColA, uColB; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        ${NOISE_GLSL}
+        void main(){
+          float fres = pow(1.0 - max(dot(normalize(vN), normalize(vV)),0.0), 2.4);
+          float flow = fbm(vP*0.9 + vec3(0.0,uTime*0.2,uTime*0.05));
+          float veins = fbm(vP*2.6 + vec3(uTime*0.3,0.0,0.0));
+          vec3 surf = mix(uColB*0.10, uColA*0.45, flow);
+          surf += uColA*pow(veins,3.0)*0.5;
+          vec3 col = surf + uColA*fres*(1.4 + uPulse*1.2 + uHi*1.6);
+          col += uColB*pow(flow,2.0)*0.3;
+          gl_FragColor = vec4(col,1.0);
+        }`
+    })
+  );
+  g.add(core);
+  // 大氣輝光殼
+  const gUni = { uPulse:{value:0}, uHi:{value:0}, uCol:{value:new THREE.Color(colorA)} };
+  const glow = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(radius*1.18, Math.max(8,detail-1)),
+    new THREE.ShaderMaterial({ uniforms:gUni, transparent:true, side:THREE.BackSide, depthWrite:false,
+      blending:THREE.AdditiveBlending, toneMapped:false,
+      vertexShader:`varying vec3 vN; varying vec3 vV; void main(){ vec4 wp=modelMatrix*vec4(position,1.0);
+        vN=normalize(mat3(modelMatrix)*normal); vV=normalize(cameraPosition-wp.xyz);
+        gl_Position=projectionMatrix*viewMatrix*wp; }`,
+      fragmentShader:`uniform float uPulse,uHi; uniform vec3 uCol; varying vec3 vN; varying vec3 vV;
+        void main(){ float fres=pow(1.0-max(dot(normalize(vN),normalize(vV)),0.0),3.0);
+          gl_FragColor=vec4(uCol, fres*(0.6+uPulse*0.5+uHi*0.6)); }`
+    })
+  );
+  g.add(glow);
+  g.userData = { core, glow, uni, gUni, radius };
+  return g;
+}
+
+// 中央品牌核心（About / HCF DNA）
+const coreP = makePlanet(5, 0x00f0ff, 0x7a5cff, 32);
+scene.add(coreP);
+// 核心能量光環
+const ring = new THREE.Mesh(new THREE.RingGeometry(7.2,9.4,128),
+  new THREE.MeshBasicMaterial({ color:0x2ad8ff, transparent:true, opacity:0.10, side:THREE.DoubleSide,
+    blending:THREE.AdditiveBlending, depthWrite:false }));
+ring.rotation.x=Math.PI*0.46; ring.rotation.y=0.3; coreP.add(ring);
+
+// ── 四大服務星球（Galaxy Map）──
+const SERVICES = [
+  { en:'Web Design', zh:'網頁設計', tag:'品牌在網路上的第一線業務員',
+    desc:'網站不只是門面，而是清楚傳遞品牌價值、引導使用者行動的轉換動線。',
+    pos:[-11,5,-68], colA:0x00F0FF, colB:0x2a7bff,
+    items:['客製化網站設計','RWD 響應式建置','一頁式 / 多頁式規劃','高轉換銷售頁','UI / UX 動線設計','基本 SEO 架構'] },
+  { en:'Branding', zh:'品牌規劃', tag:'讓人記住你、信任你、認同你',
+    desc:'品牌不是只有一個 Logo，而是一整套從定位到應用、完整而一致的識別系統。',
+    pos:[12,8,-74], colA:0x7A5CFF, colB:0xb14dff,
+    items:['品牌定位梳理','品牌 DNA 建立','CIS 視覺識別','Logo 設計','色彩 / 字體 / 風格規範','品牌應用延伸'] },
+  { en:'Graphic', zh:'平面設計', tag:'每一次出現都是印象的累積',
+    desc:'從名片、簡報到包裝，每個接觸點都兼顧畫面美感與商業目的，提升質感與說服力。',
+    pos:[-10,-9,-80], colA:0xFF4DA6, colB:0xff7a3a,
+    items:['名片設計','型錄 / DM / 海報','簡報設計','菜單設計','包裝設計','社群視覺素材'] },
+  { en:'SEO', zh:'SEO 行銷', tag:'好網站要先被找到，才有價值',
+    desc:'透過關鍵字規劃、結構優化與內容佈局，提升自然搜尋能見度，導向流量與轉換。',
+    pos:[13,-6,-86], colA:0x2BE8B0, colB:0x2ad8ff,
+    items:['SEO 基礎架構','關鍵字策略','網站內容佈局','Blog 主題規劃','標題 / 描述優化','流量轉換整合'] },
+];
+const clusterCenter = new THREE.Vector3(1,-1,-77);
+const servicePlanets = SERVICES.map((s,i)=>{
+  const p = makePlanet(3, s.colA, s.colB, 18);
+  p.position.set(...s.pos);
+  p.userData.idx = i; p.userData.core.userData.idx = i;
+  p.userData.spin = 0.10 + i*0.03;
+  scene.add(p);
+  return p;
+});
+
+// ── 星塵粒子場 ──
+function makeStarTex(){ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d');
+  const grd=g.createRadialGradient(32,32,0,32,32,32);
+  grd.addColorStop(0,'rgba(255,255,255,1)'); grd.addColorStop(0.25,'rgba(190,235,255,0.8)'); grd.addColorStop(1,'rgba(120,200,255,0)');
+  g.fillStyle=grd; g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); }
+const starTex = makeStarTex();
+const FN = 3200;
+const fGeo = new THREE.BufferGeometry();
+const fBase=new Float32Array(FN*3), fPos=new Float32Array(FN*3), fPush=new Float32Array(FN*3), fSeed=new Float32Array(FN);
+const fCol=new Float32Array(FN*3), fSize=new Float32Array(FN);
+const STAR_PAL=[[1,1,1],[0.6,0.9,1],[0.55,0.45,1],[0.4,0.95,1]];
+for(let i=0;i<FN;i++){
+  const r=18+Math.random()*170, th=Math.random()*Math.PI*2, ph=Math.acos(Math.random()*2-1);
+  const x=Math.sin(ph)*Math.cos(th)*r, y=(Math.random()-0.5)*140, z=Math.sin(ph)*Math.sin(th)*r - 50;
+  fBase[i*3]=x; fBase[i*3+1]=y; fBase[i*3+2]=z; fPos[i*3]=x; fPos[i*3+1]=y; fPos[i*3+2]=z;
+  fSeed[i]=Math.random()*Math.PI*2; fSize[i]=0.4+Math.random()*1.4;
+  const c=STAR_PAL[(Math.random()*STAR_PAL.length)|0]; fCol[i*3]=c[0]; fCol[i*3+1]=c[1]; fCol[i*3+2]=c[2];
+}
+fGeo.setAttribute('position', new THREE.BufferAttribute(fPos,3));
+fGeo.setAttribute('color', new THREE.BufferAttribute(fCol,3));
+fGeo.setAttribute('aSize', new THREE.BufferAttribute(fSize,1));
+const field = new THREE.Points(fGeo, new THREE.ShaderMaterial({
+  uniforms:{ uTex:{value:starTex}, uPix:{value:Math.min(devicePixelRatio,2)} },
+  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, toneMapped:false, vertexColors:true,
+  vertexShader:`attribute float aSize; varying vec3 vC; uniform float uPix;
+    void main(){ vC=color; vec4 mv=modelViewMatrix*vec4(position,1.0);
+      gl_PointSize=aSize*90.0*uPix/(-mv.z); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`uniform sampler2D uTex; varying vec3 vC;
+    void main(){ vec4 t=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(vC,1.0)*t; }`
+}));
+scene.add(field);
+
+// ── 鏡頭飛行軌道：深空 → 品牌核心 → 飛越 → 服務星系 ──
+const camCurve = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(  2,  6,  95),
+  new THREE.Vector3( -8,  3,  62),
+  new THREE.Vector3(  9, -4,  40),
+  new THREE.Vector3( -6,  5,  24),
+  new THREE.Vector3(  4, -2,  14),   // 核心前方
+  new THREE.Vector3(  2,  7,   2),   // 飛越核心上方
+  new THREE.Vector3( -6,  6, -22),
+  new THREE.Vector3(  3,  4, -30),
+  new THREE.Vector3(  0,  1.5,-42),  // 服務星系觀景點（後退讓 4 星球同框）
+  new THREE.Vector3(  0.6,1, -40),   // 末段近距 → 鏡頭在此徘徊讓人探索
+], false, 'catmullrom', 0.4);
+
+// ── 水波後處理 ──
+const MAX_RIP=10;
+const ripCenter=[]; for(let i=0;i<MAX_RIP;i++) ripCenter.push(new THREE.Vector2(0.5,0.5));
+const ripAge=new Float32Array(MAX_RIP).fill(-1), ripStr=new Float32Array(MAX_RIP).fill(0);
+const waterPass=new ShaderPass({
+  uniforms:{ tDiffuse:{value:null}, uCenter:{value:ripCenter}, uAge:{value:ripAge}, uStr:{value:ripStr}, uAspect:{value:innerWidth/innerHeight} },
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`uniform sampler2D tDiffuse; uniform vec2 uCenter[${MAX_RIP}]; uniform float uAge[${MAX_RIP}]; uniform float uStr[${MAX_RIP}]; uniform float uAspect; varying vec2 vUv;
+    void main(){ vec2 disp=vec2(0.0); float hl=0.0;
+      for(int i=0;i<${MAX_RIP};i++){ if(uAge[i]<0.0) continue;
+        vec2 d=vUv-uCenter[i]; d.x*=uAspect; float dist=length(d);
+        float radius=uAge[i]*0.42; float diff=dist-radius;
+        float wave=sin(diff*46.0)*exp(-abs(diff)*16.0)*exp(-uAge[i]*1.6);
+        disp+=normalize(d+1e-5)*wave*0.022*uStr[i]; hl+=wave*uStr[i]; }
+      disp.x/=uAspect; vec4 col=texture2D(tDiffuse, vUv+disp); col.rgb+=hl*vec3(0.10,0.18,0.22); gl_FragColor=col; }`
+});
+waterPass.material.toneMapped=false;
+let ripHead=0,lastRip=0;
+function spawnRipple(cx,cy,s){ const i=ripHead; ripHead=(ripHead+1)%MAX_RIP; ripCenter[i].set(cx/innerWidth,1.0-cy/innerHeight); ripAge[i]=0; ripStr[i]=s; }
+
+// ── 後處理：Bloom + 電影級 ──
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+composer.addPass(waterPass);
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.85,0.6,0.55);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const postFX=new ShaderPass({
+  uniforms:{ tDiffuse:{value:null}, uTime:{value:0}, uAmount:{value:1} },
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`uniform sampler2D tDiffuse; uniform float uTime,uAmount; varying vec2 vUv;
+    float rand(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+    void main(){ vec2 c=vUv-0.5; float r2=dot(c,c); vec2 off=c*r2*0.016*uAmount;
+      float R=texture2D(tDiffuse,vUv-off).r,G=texture2D(tDiffuse,vUv).g,B=texture2D(tDiffuse,vUv+off).b;
+      vec3 col=vec3(R,G,B); col*=1.0-r2*0.65*uAmount; col+=(rand(vUv+fract(uTime))-0.5)*0.035*uAmount;
+      gl_FragColor=vec4(col,1.0); }`
+});
+postFX.material.toneMapped=false; composer.addPass(postFX);
+
+// ── Lenis ──
+const lenis=new Lenis({ smoothWheel:true, lerp:0.08 });
+window.__L=lenis;
+let target=0, prog=0;
+lenis.on('scroll', e=>{ target = e.limit>0 ? e.scroll/e.limit : 0; });
+
+// ── 互動：游標 + 服務星球 raycast ──
+const mouse={ x:0,y:0, tx:0,ty:0, cx:innerWidth/2, cy:innerHeight/2 };
+let pulse=0;
+const cDot=document.getElementById('cursor-dot'), cRing=document.getElementById('cursor-ring');
+let ringX=innerWidth/2, ringY=innerHeight/2;
+const ray=new THREE.Raycaster();
+const ndcMouse=new THREE.Vector2();
+let hovered=-1, focusIdx=-1;
+const planetCard=document.getElementById('planet-card');
+const detail=document.getElementById('detail');
+
+function castPlanets(){
+  // 僅在服務星系區段啟用（鏡頭已接近 cluster）
+  if(prog < 0.62 || focusIdx>=0) return -1;
+  ndcMouse.set(mouse.cx/innerWidth*2-1, -(mouse.cy/innerHeight)*2+1);
+  ray.setFromCamera(ndcMouse, camera);
+  const hits = ray.intersectObjects(servicePlanets.map(p=>p.userData.core), false);
+  return hits.length ? hits[0].object.userData.idx : -1;
+}
+function openDetail(i){
+  focusIdx=i; const s=SERVICES[i];
+  detail.style.setProperty('--dc', '#'+new THREE.Color(s.colA).getHexString());
+  detail.style.setProperty('--dcGlow', 'rgba('+new THREE.Color(s.colA).r*255+','+new THREE.Color(s.colA).g*255+','+new THREE.Color(s.colA).b*255+',.3)');
+  detail.querySelector('.d-en').textContent=s.en;
+  detail.querySelector('.d-zh').textContent=s.zh;
+  detail.querySelector('.d-desc').textContent=s.desc;
+  detail.querySelector('.d-list').innerHTML=s.items.map(t=>`<li>${t}</li>`).join('');
+  detail.classList.add('open');
+  planetCard.classList.remove('show');
+}
+function closeDetail(){ focusIdx=-1; detail.classList.remove('open'); }
+detail.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click', closeDetail));
+addEventListener('keydown', e=>{ if(e.key==='Escape') closeDetail(); });
+
+addEventListener('pointermove', e=>{
+  mouse.tx=(e.clientX/innerWidth-0.5)*2; mouse.ty=(e.clientY/innerHeight-0.5)*2;
+  mouse.cx=e.clientX; mouse.cy=e.clientY;
+  if(cDot) cDot.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
+  const now=performance.now(); if(now-lastRip>70){ lastRip=now; spawnRipple(e.clientX,e.clientY,0.5); }
+},{passive:true});
+addEventListener('pointerdown', e=>{
+  pulse=1; spawnRipple(e.clientX,e.clientY,1.4);
+  mouse.cx=e.clientX; mouse.cy=e.clientY;
+  if(cRing){ cRing.classList.add('down'); setTimeout(()=>cRing.classList.remove('down'),260); }
+  if(focusIdx<0 && hovered>=0) openDetail(hovered);   // 點擊星球 → 開詳情
+},{passive:true});
+document.getElementById('explore').addEventListener('click', e=>{ e.preventDefault();
+  const max=document.documentElement.scrollHeight-innerHeight; lenis.scrollTo(max,{duration:2.2}); });
+
+const bar=document.getElementById('bar'), stageEl=document.getElementById('stage');
+const chapters=[...document.querySelectorAll('.chapter')];
+const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){
+  e.target.classList.add('in'); const st=e.target.dataset.stage; if(st) stageEl.textContent=st;
+}}),{threshold:.4});
+chapters.forEach(c=>io.observe(c));
+
+// ── 主迴圈 ──
+const clockT=new THREE.Clock();
+const damp=(a,b,l,dt)=>a+(b-a)*(1-Math.exp(-l*dt));
+const camPos=new THREE.Vector3(), look=new THREE.Vector3(), lookTo=new THREE.Vector3();
+const ndc=new THREE.Vector3(), cw=new THREE.Vector3(), cwDir=new THREE.Vector3(), proj=new THREE.Vector3();
+const focusPos=new THREE.Vector3();
+let clock=0;
+function animate(time){
+  requestAnimationFrame(animate);
+  lenis.raf(time);
+  const dt=Math.min(clockT.getDelta(),0.05); const kf=l=>1-Math.exp(-l*dt);
+  clock+=dt; prog=damp(prog,target,4.0,dt);
+  bar.style.width=(prog*100).toFixed(1)+'%';
+  pulse*=Math.exp(-3.5*dt);
+
+  // 直式/窄螢幕自動加寬視野（RWD）：橫向 FOV 變窄時補回，避免服務星球溢出畫面
+  const aspect=innerWidth/innerHeight;
+  const fovTarget=Math.min(55 + Math.max(0, 1/Math.min(aspect,1)-1)*42, 82);
+  camera.fov=damp(camera.fov,fovTarget,5,dt); camera.updateProjectionMatrix();
+
+  mouse.x=damp(mouse.x,mouse.tx,3.0,dt); mouse.y=damp(mouse.y,mouse.ty,3.0,dt);
+  ringX=damp(ringX,mouse.cx,14,dt); ringY=damp(ringY,mouse.cy,14,dt);
+  if(cRing) cRing.style.transform=`translate(${ringX}px,${ringY}px)`;
+
+  // shader 時間
+  skyUni.uTime.value=clock; postFX.uniforms.uTime.value=clock;
+  waterPass.uniforms.uAspect.value=innerWidth/innerHeight;
+  for(let i=0;i<MAX_RIP;i++){ if(ripAge[i]>=0){ ripAge[i]+=dt; if(ripAge[i]>2.6) ripAge[i]=-1; } }
+
+  // 中央核心：自轉 + 呼吸
+  coreP.rotation.y += dt*0.08; coreP.userData.core.rotation.y -= dt*0.04;
+  const breathe=1+Math.sin(clock*0.6)*0.015+pulse*0.06;
+  coreP.userData.core.scale.setScalar(breathe); coreP.userData.glow.scale.setScalar(breathe);
+  coreP.userData.uni.uTime.value=clock; coreP.userData.uni.uPulse.value=pulse;
+  coreP.userData.gUni.uPulse.value=pulse;
+  ring.rotation.z += dt*0.05;
+  bloom.strength=0.85+pulse*0.6+Math.sin(clock*0.6)*0.06;
+
+  // raycast 懸停
+  hovered = castPlanets();
+  if(cRing){ if(hovered>=0) cRing.classList.add('down'); else if(focusIdx<0) cRing.classList.remove('down'); }
+
+  // 服務星球：自轉、脈動，被懸停/聚焦者高亮放大
+  servicePlanets.forEach((p,i)=>{
+    p.userData.core.rotation.y += dt*p.userData.spin;
+    p.userData.uni.uTime.value=clock;
+    const hi = (i===hovered || i===focusIdx) ? 1 : 0;
+    p.userData.uni.uHi.value = damp(p.userData.uni.uHi.value, hi, 8, dt);
+    p.userData.gUni.uHi.value = p.userData.uni.uHi.value;
+    const sc = 1 + p.userData.uni.uHi.value*0.16 + Math.sin(clock*0.7+i)*0.01;
+    p.scale.setScalar(sc);
+  });
+
+  // 鏡頭沿軌道（捲動驅動）+ 視差 / 聚焦星球
+  const t=Math.min(prog,0.999);
+  camCurve.getPointAt(t,camPos);
+  camPos.x += mouse.x*3.0 + Math.sin(clock*0.3)*0.6;
+  camPos.y += -mouse.y*2.0 + Math.sin(clock*0.45)*0.4;
+  if(focusIdx>=0){   // 聚焦：鏡頭略推向該星球
+    focusPos.copy(servicePlanets[focusIdx].position);
+    camPos.lerp(focusPos.clone().add(new THREE.Vector3(0,0,18)), 0.5);
+  }
+  camera.position.lerp(camPos, kf(focusIdx>=0?3.0:4.5));
+
+  // look 目標：核心(0,0,0) → 服務星系，依進度平滑切換
+  const galaxyMix = THREE.MathUtils.smoothstep(prog,0.42,0.66);
+  lookTo.set(0,0,0).lerp(clusterCenter, galaxyMix);
+  if(focusIdx>=0) lookTo.lerp(servicePlanets[focusIdx].position, 0.6);
+  lookTo.x += mouse.x*1.6; lookTo.y += mouse.y*-1.0;
+  look.lerp(lookTo, kf(4.0)); camera.lookAt(look);
+
+  skyDome.position.copy(camera.position);
+
+  // 懸停資訊卡：跟隨星球投影位置
+  if(hovered>=0){
+    const s=SERVICES[hovered];
+    proj.copy(servicePlanets[hovered].position).project(camera);
+    const sx=(proj.x*0.5+0.5)*innerWidth, sy=(-proj.y*0.5+0.5)*innerHeight;
+    planetCard.style.left=sx+'px'; planetCard.style.top=(sy-90)+'px';
+    if(!planetCard.classList.contains('show')){
+      planetCard.querySelector('.pc-en').textContent=s.en;
+      planetCard.querySelector('.pc-zh').textContent=s.zh;
+      planetCard.querySelector('.pc-tag').textContent=s.tag;
+      const hex='#'+new THREE.Color(s.colA).getHexString();
+      planetCard.style.setProperty('--pc',hex);
+      planetCard.classList.add('show');
+    }
+  } else if(planetCard.classList.contains('show')){ planetCard.classList.remove('show'); }
+
+  // 星塵流場 + 游標排開
+  camera.updateMatrixWorld();
+  ndc.set(mouse.x,-mouse.y,0.5).unproject(camera);
+  cwDir.copy(ndc).sub(camera.position).normalize();
+  cw.copy(camera.position).addScaledVector(cwDir,22);
+  const fa=fGeo.attributes.position.array, R=13, R2=R*R, dec=Math.exp(-1.6*dt);
+  for(let i=0;i<FN;i++){
+    const ix=i*3,iy=ix+1,iz=ix+2,s=fSeed[i];
+    const px=fBase[ix]+Math.sin(clock*0.18+fBase[iz]*0.04+s)*1.4+fPush[ix];
+    const py=fBase[iy]+Math.cos(clock*0.16+fBase[ix]*0.04+s)*1.2+fPush[iy];
+    const pz=fBase[iz]+fPush[iz];
+    const dx=px-cw.x,dy=py-cw.y,dz=pz-cw.z,d2=dx*dx+dy*dy+dz*dz;
+    if(d2<R2){ const d=Math.sqrt(d2)+1e-3,f=(1-d/R)*26*dt; fPush[ix]+=dx/d*f; fPush[iy]+=dy/d*f; fPush[iz]+=dz/d*f; }
+    fPush[ix]*=dec; fPush[iy]*=dec; fPush[iz]*=dec;
+    fa[ix]=px; fa[iy]=py; fa[iz]=pz;
+  }
+  fGeo.attributes.position.needsUpdate=true;
+
+  composer.render();
+}
+requestAnimationFrame(animate);
+
+addEventListener('resize', ()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); bloom.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
