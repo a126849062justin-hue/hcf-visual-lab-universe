@@ -155,18 +155,11 @@
   .wcard:not(.warp){ opacity:0; }
   .wcard.warp{ animation:pWarp .9s cubic-bezier(.2,.7,.2,1) backwards; }
   .wmock{ position:relative; aspect-ratio:16/10; border-radius:10px; overflow:hidden; margin-bottom:.9rem;
-    background:linear-gradient(160deg, color-mix(in srgb,var(--wc) 16%, #0b1018), #0a0e16); border:1px solid color-mix(in srgb,var(--wc) 26%, transparent); }
-  .wmock span{ position:absolute; top:9px; width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.28); }
-  .wmock span:nth-child(1){ left:11px } .wmock span:nth-child(2){ left:23px } .wmock span:nth-child(3){ left:35px }
-  .wmock i{ position:absolute; inset:24px 12px 12px; border-radius:5px; background-repeat:no-repeat;
-    background-image:
-      linear-gradient(color-mix(in srgb,var(--wc) 60%, transparent),color-mix(in srgb,var(--wc) 60%, transparent)),
-      linear-gradient(rgba(255,255,255,.16),rgba(255,255,255,.16)),
-      linear-gradient(rgba(255,255,255,.11),rgba(255,255,255,.11)),
-      linear-gradient(rgba(255,255,255,.11),rgba(255,255,255,.11)),
-      linear-gradient(color-mix(in srgb,var(--wc) 50%, transparent),color-mix(in srgb,var(--wc) 50%, transparent));
-    background-size: 100% 40%, 58% 9%, 86% 6%, 70% 6%, 28% 13%;
-    background-position: 0 0, 0 52%, 0 66%, 0 78%, 0 97%; }
+    background:#0a0e16; border:1px solid color-mix(in srgb,var(--wc) 30%, transparent); }
+  .wmock img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top center;
+    transition:transform .6s cubic-bezier(.2,.7,.2,1), filter .6s ease; filter:saturate(1.05) brightness(.96); }
+  .wmock::after{ content:''; position:absolute; inset:0; box-shadow:inset 0 0 30px rgba(0,0,0,.5); pointer-events:none; }
+  .wcard:hover .wmock img{ transform:scale(1.07); filter:saturate(1.12) brightness(1.04); }
   .wcat{ font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:.35rem; }
   .wdesc{ font-size:.8rem; color:#8294b8; line-height:1.65; }
   @media (max-width:900px){ .wgrid{ grid-template-columns:repeat(2,1fr); max-width:560px; } }
@@ -371,12 +364,12 @@
         <p class="works-sub">每個案例都是品牌策略 × 視覺設計 × 使用者體驗的整合成果。專案背景 · 設計方向 · 視覺特色 · 改版前後 · 轉換重點。</p>
       </div>
       <div class="wgrid">
-        <div class="wcard" style="--wc:#00F0FF"><div class="wmock"><span></span><span></span><span></span><i></i></div><div class="wcat">品牌形象網站</div><div class="wdesc">完整品牌氣場 × 清楚動線，建立第一印象與信任。</div></div>
-        <div class="wcard" style="--wc:#7A5CFF"><div class="wmock"><span></span><span></span><span></span><i></i></div><div class="wcat">一頁式銷售頁</div><div class="wdesc">單一目標、強力 CTA，把流量直接導向成交。</div></div>
-        <div class="wcard" style="--wc:#2BE8B0"><div class="wmock"><span></span><span></span><span></span><i></i></div><div class="wcat">教練 / 個人品牌官網</div><div class="wdesc">放大個人魅力與專業，把追蹤者變客戶。</div></div>
-        <div class="wcard" style="--wc:#FFB23E"><div class="wmock"><span></span><span></span><span></span><i></i></div><div class="wcat">課程 / 服務型網站</div><div class="wdesc">清楚呈現價值與方案，提升報名與詢問率。</div></div>
-        <div class="wcard" style="--wc:#FF4DA6"><div class="wmock"><span></span><span></span><span></span><i></i></div><div class="wcat">活動頁 / 招生頁</div><div class="wdesc">時效性強的視覺衝擊，集中火力催單。</div></div>
-        <div class="wcard" style="--wc:#4ec8ff"><div class="wmock"><span></span><span></span><span></span><i></i></div><div class="wcat">商業視覺整合專案</div><div class="wdesc">網站 × 品牌 × 平面一致到底，建立視覺護城河。</div></div>
+        <div class="wcard" style="--wc:#C69C6D"><div class="wmock"><img src="works/mooncake.jpg" alt="鹿本門月餅" loading="lazy"></div><div class="wcat">鹿本門月餅</div><div class="wdesc">和風職人月餅一頁式 · 流心 lava 特效 · 深淺奢華切換</div></div>
+        <div class="wcard" style="--wc:#D4AF37"><div class="wmock"><img src="works/lucky2.jpg" alt="好運小姐" loading="lazy"></div><div class="wcat">好運小姐</div><div class="wdesc">開運品牌官網 · 金色水晶願室 · 命理 × 視覺整合</div></div>
+        <div class="wcard" style="--wc:#E74C3C"><div class="wmock"><img src="works/combat.jpg" alt="HCF 新竹格鬥" loading="lazy"></div><div class="wcat">新竹格鬥 HCF</div><div class="wdesc">格鬥品牌官網 · 粗體標語張力 · 戰鬥感視覺</div></div>
+        <div class="wcard" style="--wc:#FF5A3C"><div class="wmock"><img src="works/hcf2026.jpg" alt="HCF Combat" loading="lazy"></div><div class="wcat">HCF Combat</div><div class="wdesc">拳擊課程網站 · 攝影主視覺 · 報名轉換導向</div></div>
+        <div class="wcard" style="--wc:#C0392B"><div class="wmock"><img src="works/sangoku.jpg" alt="三國無雙" loading="lazy"></div><div class="wcat">三國無雙</div><div class="wdesc">沉浸式體驗站 · 史詩戰將主視覺 · 多主題切換</div></div>
+        <div class="wcard" style="--wc:#00F0FF"><div class="wmock"><img src="works/ultimate.jpg" alt="HCF Visual Lab" loading="lazy"></div><div class="wcat">HCF Visual Lab</div><div class="wdesc">品牌沉浸官網 · 戰將動態主視覺 · 成交導向文案</div></div>
       </div>
       <div class="cta-wrap" style="text-align:center; width:100%"><a class="cta" href="#pricing" id="works-cta">看合作方案 <span class="arrow">→</span></a></div>
     </section>
