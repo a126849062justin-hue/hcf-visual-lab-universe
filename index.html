@@ -83,8 +83,14 @@
   .pcard{ pointer-events:auto; position:relative; text-align:left; display:flex; flex-direction:column;
     background:linear-gradient(165deg, rgba(14,18,30,.82), rgba(8,10,18,.72)); backdrop-filter:blur(10px);
     border:1px solid rgba(140,170,230,.16); border-radius:18px; padding:1.7rem 1.4rem 1.5rem;
-    transition:transform .45s cubic-bezier(.2,.7,.2,1), border-color .45s, box-shadow .45s; }
-  .pcard:hover{ transform:translateY(-8px); border-color:var(--pc); box-shadow:0 18px 50px rgba(0,0,0,.4), 0 0 40px color-mix(in srgb, var(--pc) 30%, transparent); }
+    transform-style:preserve-3d; will-change:transform;
+    transition:transform .22s ease-out, border-color .45s, box-shadow .45s; }
+  .pcard:hover{ border-color:var(--pc); box-shadow:0 22px 60px rgba(0,0,0,.45), 0 0 46px color-mix(in srgb, var(--pc) 32%, transparent); }
+  /* 懸停游標光澤（跟隨游標的反光，強化全息懸浮面板感） */
+  .pcard .pglare{ position:absolute; inset:0; border-radius:18px; pointer-events:none; opacity:0; transition:opacity .4s; z-index:3;
+    background:radial-gradient(240px circle at var(--gx,50%) var(--gy,50%), rgba(150,215,255,.18), transparent 62%); }
+  @media (hover:hover){ .pcard:hover .pglare{ opacity:1; } }
+  .pcard > *:not(.pglare){ transform:translateZ(0.01px); }
   .pcard.featured{ border-color:color-mix(in srgb, var(--pc) 55%, transparent); box-shadow:0 0 50px color-mix(in srgb, var(--pc) 22%, transparent); }
   .pflag{ position:absolute; top:-11px; left:50%; transform:translateX(-50%); white-space:nowrap;
     background:linear-gradient(90deg,#FFB23E,#ff7a3a); color:#1a1206; font-size:.64rem; font-weight:700;
@@ -106,7 +112,7 @@
   #pricing:not(.in) .pricing-head{ opacity:0; }
   .chapter#pricing.in .pricing-head{ animation:pHead .9s cubic-bezier(.2,.7,.2,1) both; }
   .pcard:not(.warp){ opacity:0; }
-  .pcard.warp{ animation:pWarp .9s cubic-bezier(.2,.7,.2,1) both; transform-style:preserve-3d; }
+  .pcard.warp{ animation:pWarp .9s cubic-bezier(.2,.7,.2,1) backwards; }
   .pcard.warp:nth-child(2){ animation-delay:.1s } .pcard.warp:nth-child(3){ animation-delay:.2s } .pcard.warp:nth-child(4){ animation-delay:.3s }
   @keyframes pHead{ 0%{ opacity:0; transform:translateY(26px); filter:blur(4px); } 100%{ opacity:1; transform:none; filter:none; } }
   @keyframes pWarp{
@@ -764,6 +770,21 @@ revealOnScroll();
 // 主觸發：每張方案卡被看見 25% 時才飛入（不論桌面整排或手機單欄、不論捲動快慢/CTA 跳轉皆可靠）
 const cardIO=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('warp'); }), {threshold:0.25});
 pcardEls.forEach(c=>cardIO.observe(c));
+
+// 沉浸式：方案卡 3D 視差傾斜 + 游標光澤（懸浮全息面板感，僅真實游標裝置）
+if(matchMedia('(hover:hover) and (pointer:fine)').matches){
+  pcardEls.forEach(card=>{
+    const glare=document.createElement('div'); glare.className='pglare'; card.appendChild(glare);
+    card.addEventListener('pointermove', e=>{
+      const r=card.getBoundingClientRect();
+      const px=(e.clientX-r.left)/r.width, py=(e.clientY-r.top)/r.height;
+      const rx=((0.5-py)*9).toFixed(2), ry=((px-0.5)*9).toFixed(2);
+      card.style.transform=`perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-7px) scale(1.015)`;
+      card.style.setProperty('--gx', (px*100).toFixed(1)+'%'); card.style.setProperty('--gy', (py*100).toFixed(1)+'%');
+    }, {passive:true});
+    card.addEventListener('pointerleave', ()=>{ card.style.transform=''; });
+  });
+}
 
 // ── 主迴圈 ──
 const clockT=new THREE.Clock();
