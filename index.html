@@ -73,6 +73,34 @@
   .clink.line:hover{ background:rgba(6,199,85,.14); border-color:#06c755; color:#fff; }
   .cfoot{ margin-top:1.5rem; font-size:.66rem; color:#6f7fa0; letter-spacing:.04em; }
   .cfoot a{ color:#9fb0d6; text-decoration:none; } .cfoot a:hover{ color:var(--cyan); }
+  /* ── Pricing / 方案星站 ── */
+  .chapter#pricing{ height:auto; min-height:100vh; padding:96px 5vw 64px; justify-content:center; align-items:center; text-align:center; }
+  .pricing-head{ max-width:680px; }
+  .pricing-title{ font-size:clamp(1.8rem,5vw,3rem); font-weight:700; color:#fff; margin:.3rem 0 .8rem; letter-spacing:-.01em; }
+  .pricing-sub{ font-size:clamp(.9rem,1.5vw,1.05rem); color:#9fb0d6; font-weight:300; line-height:1.8; margin-bottom:2.2rem; }
+  .pgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:1.1rem; width:100%; max-width:1180px; }
+  .pcard{ pointer-events:auto; position:relative; text-align:left; display:flex; flex-direction:column;
+    background:linear-gradient(165deg, rgba(14,18,30,.82), rgba(8,10,18,.72)); backdrop-filter:blur(10px);
+    border:1px solid rgba(140,170,230,.16); border-radius:18px; padding:1.7rem 1.4rem 1.5rem;
+    transition:transform .45s cubic-bezier(.2,.7,.2,1), border-color .45s, box-shadow .45s; }
+  .pcard:hover{ transform:translateY(-8px); border-color:var(--pc); box-shadow:0 18px 50px rgba(0,0,0,.4), 0 0 40px color-mix(in srgb, var(--pc) 30%, transparent); }
+  .pcard.featured{ border-color:color-mix(in srgb, var(--pc) 55%, transparent); box-shadow:0 0 50px color-mix(in srgb, var(--pc) 22%, transparent); }
+  .pflag{ position:absolute; top:-11px; left:50%; transform:translateX(-50%); white-space:nowrap;
+    background:linear-gradient(90deg,#FFB23E,#ff7a3a); color:#1a1206; font-size:.64rem; font-weight:700;
+    letter-spacing:.12em; padding:.3rem .9rem; border-radius:100px; }
+  .pcard .ptier{ font-size:.66rem; letter-spacing:.32em; text-transform:uppercase; color:var(--pc); }
+  .pcard .pname{ font-size:1.35rem; font-weight:700; color:#fff; margin:.3rem 0 .5rem; }
+  .pcard .pfor{ font-size:.76rem; color:#8294b8; line-height:1.6; min-height:2.6em; margin-bottom:1rem;
+    padding-bottom:1rem; border-bottom:1px solid rgba(140,170,230,.12); }
+  .pcard ul{ list-style:none; display:flex; flex-direction:column; gap:.55rem; margin-bottom:1.4rem; }
+  .pcard ul li{ font-size:.84rem; color:#cdd6ec; padding-left:1.3rem; position:relative; line-height:1.4; }
+  .pcard ul li::before{ content:"✦"; position:absolute; left:0; color:var(--pc); font-size:.8rem; }
+  .pcard .pcta{ margin-top:auto; width:100%; padding:.75rem 1rem; border-radius:100px; cursor:none;
+    font-size:.8rem; letter-spacing:.06em; color:#fff; font-family:inherit;
+    background:color-mix(in srgb, var(--pc) 12%, transparent); border:1px solid color-mix(in srgb, var(--pc) 50%, transparent);
+    transition:background .35s, transform .35s, box-shadow .35s; }
+  .pcard .pcta:hover{ background:color-mix(in srgb, var(--pc) 24%, transparent); box-shadow:0 0 26px color-mix(in srgb, var(--pc) 35%, transparent); transform:translateY(-2px); }
+  .pricing-foot{ margin-top:1.8rem; font-size:.68rem; color:#6f7fa0; letter-spacing:.03em; }
   /* 進度條 + 章節導引 */
   #bar{ position:fixed; left:0; top:0; height:2px; width:0;
     background:linear-gradient(90deg,var(--cyan),var(--purple)); z-index:8; box-shadow:0 0 14px var(--cyan); }
@@ -130,8 +158,12 @@
     transition:width .22s, height .22s, margin .22s, border-color .22s; }
   #cursor-ring.down{ width:52px; height:52px; margin:-26px 0 0 -26px; border-color:var(--cyan); }
   @media (pointer:coarse){ html,body{cursor:auto} #cursor-dot,#cursor-ring{display:none} }
+  /* 平板：方案改 2 欄 */
+  @media (max-width:980px){ .pgrid{ grid-template-columns:repeat(2,1fr); max-width:620px; } }
   /* 手機版：縮排版避免標題斷字孤行、隱藏與品牌/階段標重疊的裝飾四角 */
   @media (max-width:600px){
+    .pgrid{ grid-template-columns:1fr; max-width:380px; }
+    .pcard .pfor{ min-height:0; }
     .corner{ display:none; }
     .chapter{ padding:0 6vw; }
     .chapter h2{ font-size:clamp(1.85rem,8vw,5.4rem); }
@@ -204,14 +236,65 @@
       <div class="badge">Service · 服務星系</div>
       <h2>四顆星球<br>一套<span class="accent">作品星系</span></h2>
       <p>網頁設計、品牌規劃、平面設計、SEO 行銷——靠近任一顆星球，它會旋轉發光；點擊，鏡頭飛入，展開服務細節。</p>
-      <div class="cta-wrap"><a class="cta" href="#contact" id="explore">準備好了？前往控制中心 <span class="arrow">→</span></a></div>
+      <div class="cta-wrap"><a class="cta" href="#pricing" id="explore">查看合作方案 <span class="arrow">→</span></a></div>
     </section>
-    <section class="chapter" data-stage="04 / Command Center">
+    <section class="chapter" id="pricing" data-stage="04 / Pricing">
+      <div class="pricing-head">
+        <div class="badge">Pricing · 方案星站</div>
+        <h3 class="pricing-title">選一座<span class="accent">星站</span>，啟程</h3>
+        <p class="pricing-sub">依品牌現況、預算與目標，從基礎建置到高轉換整合，找到最適合你的軌道。</p>
+      </div>
+      <div class="pgrid">
+        <div class="pcard" data-plan="基礎曝光版" style="--pc:#00F0FF">
+          <div class="ptier">Starter</div>
+          <div class="pname">基礎曝光版</div>
+          <div class="pfor">剛起步品牌 · 個人接案 · 教練 · 小型品牌</div>
+          <ul>
+            <li>RWD 響應式網站</li><li>基本視覺配置</li><li>基礎 SEO 架構</li>
+            <li>聯絡表單 / CTA 按鈕</li><li>基本上線設定</li>
+          </ul>
+          <button class="pcta">選擇此方案 →</button>
+        </div>
+        <div class="pcard" data-plan="成交強化版" style="--pc:#7A5CFF">
+          <div class="ptier">Growth</div>
+          <div class="pname">成交強化版</div>
+          <div class="pfor">有明確商業目標 · 想提升詢問與成交率</div>
+          <ul>
+            <li>客製化首頁設計</li><li>網站內容架構規劃</li><li>品牌視覺整合</li>
+            <li>SEO 基礎關鍵字配置</li><li>CTA 轉換設計</li><li>行動裝置體驗優化</li>
+          </ul>
+          <button class="pcta">選擇此方案 →</button>
+        </div>
+        <div class="pcard featured" data-plan="品牌變現版" style="--pc:#FFB23E">
+          <div class="pflag">最受歡迎</div>
+          <div class="ptier">Pro</div>
+          <div class="pname">品牌變現版</div>
+          <div class="pfor">需要形象 · 流量 · 銷售三者整合</div>
+          <ul>
+            <li>客製化網站設計</li><li>品牌視覺系統整合</li><li>高轉換銷售頁規劃</li>
+            <li>SEO 內容策略</li><li>預約 / 表單 / 系統串接</li><li>長期成長規劃建議</li>
+          </ul>
+          <button class="pcta">選擇此方案 →</button>
+        </div>
+        <div class="pcard" data-plan="客製企業專案" style="--pc:#2BE8B0">
+          <div class="ptier">Enterprise</div>
+          <div class="pname">客製企業專案</div>
+          <div class="pfor">企業品牌升級 · 內容擴張 · 高階整合</div>
+          <ul>
+            <li>UI / UX 深度規劃</li><li>多頁式網站架構</li><li>品牌識別延伸</li>
+            <li>SEO 結構與內容佈局</li><li>特殊功能 / 系統整合</li><li>專案型客製規劃</li>
+          </ul>
+          <button class="pcta">洽談專案 →</button>
+        </div>
+      </div>
+      <div class="pricing-foot">方案內容為規劃方向，實際報價以雙方溝通與合約為準。</div>
+    </section>
+    <section class="chapter" data-stage="05 / Command Center">
       <div class="badge">Command Center · 控制中心</div>
       <h2>Ready To<br>Build The <span class="accent">Future?</span></h2>
       <p>艙門正在開啟。穿過能量之門，告訴我們你的品牌、目標與預算——我們會依你的產業給出最適合的規劃方向。</p>
     </section>
-    <section class="chapter" id="contact" data-stage="04 / Command Center">
+    <section class="chapter" id="contact" data-stage="05 / Command Center">
       <div class="contact-shell">
         <div class="badge">Contact · 啟動合作</div>
         <h3 class="contact-title">把你的品牌<span class="accent">交給宇宙</span></h3>
@@ -439,6 +522,32 @@ const gateGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map:makeGateTex(), 
   blending:THREE.AdditiveBlending, depthWrite:false, opacity:0.9 }));
 gateGlow.scale.set(26,26,1); portal.add(gateGlow);
 
+// ── 方案星站（Pricing）：4 座漂浮太空站，位於服務星系與控制中心之間 ──
+const stationTex = makeGateTex();
+function makeStation(color, pos, seed){
+  const g = new THREE.Group(); g.position.set(...pos);
+  const col = new THREE.Color(color);
+  const coreMat = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.9 });
+  g.add(new THREE.Mesh(new THREE.OctahedronGeometry(1.5,0), coreMat));                 // 核心
+  const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(2.5,0),
+    new THREE.MeshBasicMaterial({ color, wireframe:true, transparent:true, opacity:0.45 }));
+  g.add(shell);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(3.4,0.07,8,56),
+    new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.55, blending:THREE.AdditiveBlending, depthWrite:false }));
+  ring.rotation.x = Math.PI*0.5; g.add(ring);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map:stationTex, color, transparent:true,
+    blending:THREE.AdditiveBlending, depthWrite:false, opacity:0.5 }));
+  glow.scale.set(9,9,1); g.add(glow);
+  g.userData = { shell, ring, glow, spin:0.25+seed*0.1, drift:seed };
+  scene.add(g); return g;
+}
+const stations = [
+  makeStation(0x00F0FF, [-10, 6, -72], 0),
+  makeStation(0x7A5CFF, [ 11,-6, -86], 1),
+  makeStation(0xFFB23E, [ -9, 8, -100], 2),
+  makeStation(0x2BE8B0, [ 10,-7, -114], 3),
+];
+
 // ── 星塵粒子場 ──
 function makeStarTex(){ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d');
   const grd=g.createRadialGradient(32,32,0,32,32,32);
@@ -580,7 +689,17 @@ addEventListener('pointerdown', e=>{
   if(focusIdx<0 && hovered>=0) openDetail(hovered);   // 點擊星球 → 開詳情
 },{passive:true});
 document.getElementById('explore').addEventListener('click', e=>{ e.preventDefault();
-  lenis.scrollTo('#contact',{duration:2.4,offset:-1}); });
+  lenis.scrollTo('#pricing',{duration:2.2,offset:-1}); });
+
+// ── 方案卡：點擊 → 帶方案名捲到聯絡表單並預填 ──
+document.querySelectorAll('.pcard .pcta').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const plan=btn.closest('.pcard')?.dataset.plan||'';
+    const note=document.querySelector('#cform [name=note]');
+    if(note && plan) note.value=`我想了解【${plan}】，請提供建議與報價。`;
+    lenis.scrollTo('#contact',{duration:2.4,offset:-1});
+  });
+});
 
 // ── 聯絡表單：送出 → 組成 mailto 帶入內容寄給 HCF ──
 const cform=document.getElementById('cform');
@@ -673,6 +792,16 @@ function animate(time){
   portalRings.forEach(rg=>{ rg.rotation.z += dt*rg.userData.spin; rg.material.opacity = (rg.material.userData?.base ?? (rg.material.userData.base=rg.material.opacity)) * (0.5+cmd*0.9); });
   gateGlow.material.opacity = (0.25 + cmd*0.75) * (0.85+Math.sin(clock*1.4)*0.15);
   gateGlow.scale.setScalar(24 + Math.sin(clock*0.9)*1.5 + cmd*4);
+
+  // 方案星站：核心殼自轉、環反向、輕微漂浮脈動
+  stations.forEach(st=>{
+    st.userData.shell.rotation.y += dt*st.userData.spin;
+    st.userData.shell.rotation.x += dt*st.userData.spin*0.4;
+    st.userData.ring.rotation.z += dt*0.4;
+    st.rotation.y += dt*0.15;
+    st.position.y += Math.sin(clock*0.6 + st.userData.drift)*dt*0.4;
+    st.userData.glow.material.opacity = 0.4 + Math.sin(clock*1.2 + st.userData.drift)*0.12;
+  });
 
   // 鏡頭沿軌道（捲動驅動）+ 視差 / 聚焦星球
   const t=Math.min(prog,0.999);
