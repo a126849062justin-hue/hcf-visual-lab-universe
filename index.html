@@ -829,26 +829,34 @@ function animate(time){
   hovered = castPlanets();
   if(cRing){ if(hovered>=0) cRing.classList.add('down'); else if(focusIdx<0) cRing.classList.remove('down'); }
 
-  // 服務星球：自轉、脈動，被懸停/聚焦者高亮放大
+  // 沉浸式分段揭露：物件接近各自段落才「成形」，避免 Arrival 遠景時全部擠在首屏擋住標題
+  const rvPlanets  = THREE.MathUtils.smoothstep(prog, 0.30, 0.46);   // 服務星球（Galaxy）
+  const rvStations = THREE.MathUtils.smoothstep(prog, 0.60, 0.76);   // 太空站（Pricing）
+  const rvPortal   = THREE.MathUtils.smoothstep(prog, 0.66, 0.86);   // 能量之門（Command）
+
+  // 服務星球：自轉、脈動，被懸停/聚焦者高亮放大（接近 Galaxy 才縮放成形）
   servicePlanets.forEach((p,i)=>{
+    p.visible = rvPlanets > 0.004;
     p.userData.core.rotation.y += dt*p.userData.spin;
     p.userData.uni.uTime.value=clock;
     const hi = (i===hovered || i===focusIdx) ? 1 : 0;
     p.userData.uni.uHi.value = damp(p.userData.uni.uHi.value, hi, 8, dt);
     p.userData.gUni.uHi.value = p.userData.uni.uHi.value;
     const sc = 1 + p.userData.uni.uHi.value*0.16 + Math.sin(clock*0.7+i)*0.01;
-    p.scale.setScalar(sc);
+    p.scale.setScalar(sc*rvPlanets);
   });
 
-  // Command Center 能量之門：光環反向旋轉 + 接近時輝光增強脈動
+  // Command Center 能量之門：接近控制中心才漸顯（避免遠景時光環擋住首屏）
   const cmd = THREE.MathUtils.smoothstep(prog,0.7,0.96);
+  portal.visible = rvPortal > 0.004;
   portal.rotation.z += dt*0.04;
-  portalRings.forEach(rg=>{ rg.rotation.z += dt*rg.userData.spin; rg.material.opacity = (rg.material.userData?.base ?? (rg.material.userData.base=rg.material.opacity)) * (0.5+cmd*0.9); });
-  gateGlow.material.opacity = (0.25 + cmd*0.75) * (0.85+Math.sin(clock*1.4)*0.15);
+  portalRings.forEach(rg=>{ rg.rotation.z += dt*rg.userData.spin; rg.material.opacity = (rg.material.userData?.base ?? (rg.material.userData.base=rg.material.opacity)) * (0.5+cmd*0.9) * rvPortal; });
+  gateGlow.material.opacity = (0.25 + cmd*0.75) * (0.85+Math.sin(clock*1.4)*0.15) * rvPortal;
   gateGlow.scale.setScalar(24 + Math.sin(clock*0.9)*1.5 + cmd*4);
 
-  // 方案星站：自轉/漂浮 + 接近供電（鏡頭越近越亮、環越快、核心脹大脈動）
+  // 方案星站：自轉/漂浮 + 接近供電（接近 Pricing 才縮放成形）
   stations.forEach(st=>{
+    st.visible = rvStations > 0.004;
     const near = THREE.MathUtils.clamp(1 - (camera.position.distanceTo(st.position) - 14) / 44, 0, 1);
     const pulse2 = 0.85 + Math.sin(clock*1.4 + st.userData.drift)*0.15;
     st.userData.shell.rotation.y += dt*st.userData.spin*(1+near);
@@ -856,10 +864,10 @@ function animate(time){
     st.userData.ring.rotation.z += dt*(0.4 + near*1.6);
     st.rotation.y += dt*0.15;
     st.position.y += Math.sin(clock*0.6 + st.userData.drift)*dt*0.4;
-    st.userData.glow.material.opacity = (0.18 + near*0.7) * pulse2;
+    st.userData.glow.material.opacity = (0.18 + near*0.7) * pulse2 * rvStations;
+    st.userData.ring.material.opacity = (0.35 + near*0.5) * rvStations;
     st.userData.glow.scale.setScalar(8 + near*5);
-    st.userData.ring.material.opacity = 0.35 + near*0.5;
-    st.scale.setScalar(1 + near*0.18*pulse2);
+    st.scale.setScalar((1 + near*0.18*pulse2) * rvStations);
   });
 
   // 鏡頭沿軌道（捲動驅動）+ 視差 / 聚焦星球
