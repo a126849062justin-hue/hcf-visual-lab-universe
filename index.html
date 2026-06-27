@@ -100,6 +100,15 @@
     transition:width .22s, height .22s, margin .22s, border-color .22s; }
   #cursor-ring.down{ width:52px; height:52px; margin:-26px 0 0 -26px; border-color:var(--cyan); }
   @media (pointer:coarse){ html,body{cursor:auto} #cursor-dot,#cursor-ring{display:none} }
+  /* 手機版：縮排版避免標題斷字孤行、隱藏與品牌/階段標重疊的裝飾四角 */
+  @media (max-width:600px){
+    .corner{ display:none; }
+    .chapter{ padding:0 6vw; }
+    .chapter h2{ font-size:clamp(1.85rem,8vw,5.4rem); }
+    #brand{ left:18px; font-size:.66rem; letter-spacing:.24em; }
+    #stage{ right:18px; font-size:.6rem; letter-spacing:.22em; }
+    #frame{ inset:9px; border-radius:14px; }
+  }
   html.lenis,html.lenis body{ height:auto; }
   .lenis.lenis-smooth{ scroll-behavior:auto !important; }
   .lenis.lenis-stopped{ overflow:hidden; }
@@ -183,7 +192,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import Lenis from 'lenis';
 
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, preserveDrawingBuffer:true });
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -301,19 +310,19 @@ ring.rotation.x=Math.PI*0.46; ring.rotation.y=0.3; coreP.add(ring);
 const SERVICES = [
   { en:'Web Design', zh:'網頁設計', tag:'品牌在網路上的第一線業務員',
     desc:'網站不只是門面，而是清楚傳遞品牌價值、引導使用者行動的轉換動線。',
-    pos:[-11,5,-68], colA:0x00F0FF, colB:0x2a7bff,
+    pos:[-8,5,-68], colA:0x00F0FF, colB:0x2a7bff,
     items:['客製化網站設計','RWD 響應式建置','一頁式 / 多頁式規劃','高轉換銷售頁','UI / UX 動線設計','基本 SEO 架構'] },
   { en:'Branding', zh:'品牌規劃', tag:'讓人記住你、信任你、認同你',
     desc:'品牌不是只有一個 Logo，而是一整套從定位到應用、完整而一致的識別系統。',
-    pos:[12,8,-74], colA:0x7A5CFF, colB:0xb14dff,
+    pos:[10,8,-74], colA:0x7A5CFF, colB:0xb14dff,
     items:['品牌定位梳理','品牌 DNA 建立','CIS 視覺識別','Logo 設計','色彩 / 字體 / 風格規範','品牌應用延伸'] },
   { en:'Graphic', zh:'平面設計', tag:'每一次出現都是印象的累積',
     desc:'從名片、簡報到包裝，每個接觸點都兼顧畫面美感與商業目的，提升質感與說服力。',
-    pos:[-10,-9,-80], colA:0xFF4DA6, colB:0xff7a3a,
+    pos:[-8.5,-9,-80], colA:0xFF4DA6, colB:0xff7a3a,
     items:['名片設計','型錄 / DM / 海報','簡報設計','菜單設計','包裝設計','社群視覺素材'] },
   { en:'SEO', zh:'SEO 行銷', tag:'好網站要先被找到，才有價值',
     desc:'透過關鍵字規劃、結構優化與內容佈局，提升自然搜尋能見度，導向流量與轉換。',
-    pos:[13,-6,-86], colA:0x2BE8B0, colB:0x2ad8ff,
+    pos:[11,-6,-86], colA:0x2BE8B0, colB:0x2ad8ff,
     items:['SEO 基礎架構','關鍵字策略','網站內容佈局','Blog 主題規劃','標題 / 描述優化','流量轉換整合'] },
 ];
 const clusterCenter = new THREE.Vector3(1,-1,-77);
