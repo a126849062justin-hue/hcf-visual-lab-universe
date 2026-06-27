@@ -21,9 +21,7 @@
   .chapter:nth-child(even){ align-items:flex-end; text-align:right; }
   .chapter h2{
     font-size:clamp(2.2rem,6.5vw,5.4rem); line-height:1.04; letter-spacing:-.01em; font-weight:700;
-    color:#fff; opacity:0; transform:translateY(40px);
-    text-shadow:0 0 60px rgba(0,240,255,.22);
-    transition:opacity 1s cubic-bezier(.2,.7,.2,1), transform 1s cubic-bezier(.2,.7,.2,1);
+    color:#fff; text-shadow:0 0 60px rgba(0,240,255,.22);
   }
   .chapter h2 .accent{ color:transparent; background:linear-gradient(120deg,var(--cyan),var(--purple)); -webkit-background-clip:text; background-clip:text; }
   .chapter p{
@@ -31,7 +29,16 @@
     color:#9fb0d6; line-height:1.85; font-weight:300;
     opacity:0; transform:translateY(30px); transition:opacity 1.1s ease .15s, transform 1.1s ease .15s;
   }
-  .chapter.in h2,.chapter.in p{ opacity:1; transform:none; }
+  .chapter.in p{ opacity:1; transform:none; }
+  /* 動態文字：per-line 遮罩揭露（標題從遮罩下方滑升 + 模糊聚焦，逐行錯位）*/
+  .kl{ display:block; overflow:hidden; padding:0.06em 0.04em; margin:-0.06em -0.04em; }
+  .ki{ display:inline-block; transform:translateY(116%) rotate(2deg); opacity:0; filter:blur(8px);
+    transition:transform 1.05s cubic-bezier(.16,1,.3,1), opacity 1s ease, filter 1s ease; will-change:transform; }
+  .chapter.in .ki, #pricing.in .ki, #contact.in .ki{ transform:none; opacity:1; filter:blur(0); }
+  .in .kl:nth-child(1) .ki{ transition-delay:.05s }
+  .in .kl:nth-child(2) .ki{ transition-delay:.18s }
+  .in .kl:nth-child(3) .ki{ transition-delay:.31s }
+  @media (prefers-reduced-motion:reduce){ .ki{ transition:none; transform:none; opacity:1; filter:none; } }
   .badge{ font-size:.72rem; letter-spacing:.5em; text-transform:uppercase;
     color:var(--cyan); opacity:.9; margin-bottom:1.2rem; }
   .num{ font-variant-numeric:tabular-nums; opacity:.5; }
@@ -225,6 +232,22 @@
   #gate .g-enter:active{ transform:scale(.96); }
   @keyframes gatePulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(0,240,255,.35); } 50%{ box-shadow:0 0 36px 4px rgba(0,240,255,.25); } }
   #gate .g-note{ margin-top:1.6rem; font-size:.6rem; letter-spacing:.1em; color:#6f7fa0; max-width:24ch; line-height:1.7; }
+  /* 預載進度（載入時顯示，100% 後換成 ENTER 鈕）*/
+  .g-load{ margin-top:2.6rem; width:min(280px,62vw); }
+  .g-bar{ height:2px; background:rgba(140,170,230,.16); border-radius:2px; overflow:hidden; }
+  .g-bar i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--cyan),var(--purple)); box-shadow:0 0 12px var(--cyan); }
+  .g-pct{ margin-top:.9rem; font-size:.7rem; letter-spacing:.3em; color:#8fa0c6; font-variant-numeric:tabular-nums; }
+  .g-pct::after{ content:'%'; opacity:.5; margin-left:1px; }
+  #gate:not(.ready) .g-enter{ display:none; }
+  #gate.ready .g-load{ display:none; }
+  #gate.ready .g-enter{ animation:gatePulse 2.4s ease-in-out infinite, gIn .6s ease both; }
+  @keyframes gIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+  /* 光速進場：放射光束衝刺 */
+  #hyper{ position:fixed; inset:-20%; z-index:41; pointer-events:none; opacity:0;
+    background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(190,235,255,0) 0deg, rgba(190,235,255,0) 1.4deg, rgba(190,235,255,.55) 1.9deg, rgba(190,235,255,0) 2.4deg);
+    mix-blend-mode:screen; }
+  #hyper.go{ animation:hyper 1.05s cubic-bezier(.3,0,.2,1) forwards; }
+  @keyframes hyper{ 0%{ opacity:0; transform:scale(.15); } 22%{ opacity:.95; } 100%{ opacity:0; transform:scale(2.8); } }
   /* 光速進場閃光 */
   #flash{ position:fixed; inset:0; z-index:40; pointer-events:none; opacity:0;
     background:radial-gradient(60% 60% at 50% 50%, rgba(220,250,255,.9), rgba(0,240,255,.25) 45%, transparent 72%); }
@@ -237,10 +260,12 @@
 </head>
 <body>
   <div id="flash"></div>
+  <div id="hyper"></div>
   <div id="gate">
     <div class="g-badge">HCF Visual Lab</div>
     <div class="g-logo">進入<span>宇宙</span></div>
     <div class="g-sub">Immersive Digital Universe</div>
+    <div class="g-load" id="gLoad"><div class="g-bar"><i id="gBarFill"></i></div><div class="g-pct" id="gPct">0</div></div>
     <button class="g-enter" id="gEnter">ENTER UNIVERSE →</button>
     <div class="g-note">建議開啟聲音、戴上耳機；手機可傾斜感受體感視差</div>
   </div>
@@ -692,16 +717,41 @@ const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.85,0
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const postFX=new ShaderPass({
-  uniforms:{ tDiffuse:{value:null}, uTime:{value:0}, uAmount:{value:1} },
+  uniforms:{ tDiffuse:{value:null}, uTime:{value:0}, uAmount:{value:1}, uTint:{value:new THREE.Vector3(1,1,1)}, uSat:{value:1.0}, uFlash:{value:0} },
   vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader:`uniform sampler2D tDiffuse; uniform float uTime,uAmount; varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tDiffuse; uniform float uTime,uAmount,uSat,uFlash; uniform vec3 uTint; varying vec2 vUv;
     float rand(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
     void main(){ vec2 c=vUv-0.5; float r2=dot(c,c); vec2 off=c*r2*0.016*uAmount;
       float R=texture2D(tDiffuse,vUv-off).r,G=texture2D(tDiffuse,vUv).g,B=texture2D(tDiffuse,vUv+off).b;
-      vec3 col=vec3(R,G,B); col*=1.0-r2*0.65*uAmount; col+=(rand(vUv+fract(uTime))-0.5)*0.035*uAmount;
+      vec3 col=vec3(R,G,B);
+      col *= uTint;                                            // 每世界色調
+      float l=dot(col,vec3(0.299,0.587,0.114)); col=mix(vec3(l),col,uSat);   // 飽和度分級
+      col*=1.0-r2*0.65*uAmount; col+=(rand(vUv+fract(uTime))-0.5)*0.035*uAmount;
+      col += uFlash;                                           // 轉場/進場閃白
       gl_FragColor=vec4(col,1.0); }`
 });
 postFX.material.toneMapped=false; composer.addPass(postFX);
+
+// ── 每世界氛圍系統：色調/霧氣/光暈/曝光/飽和 隨段落演變（捲動像穿越不同星域）──
+const MOODS = [
+  { p:0.00, fog:[0.020,0.027,0.050], fogD:0.011, bloom:0.85, tint:[0.82,0.95,1.12], sat:1.02, expo:1.05 }, // Arrival 深冷藍
+  { p:0.24, fog:[0.032,0.022,0.052], fogD:0.013, bloom:0.80, tint:[1.02,0.90,1.12], sat:1.00, expo:1.04 }, // About 親密紫
+  { p:0.50, fog:[0.018,0.030,0.050], fogD:0.0075,bloom:1.02, tint:[0.94,1.02,1.06], sat:1.12, expo:1.12 }, // Galaxy 明亮鮮活
+  { p:0.72, fog:[0.045,0.034,0.040], fogD:0.0095,bloom:0.96, tint:[1.12,1.00,0.82], sat:1.08, expo:1.10 }, // Pricing 金能量
+  { p:0.93, fog:[0.016,0.040,0.064], fogD:0.0085,bloom:1.22, tint:[0.84,1.00,1.18], sat:1.10, expo:1.16 }, // Command 電光
+];
+const _fogC=new THREE.Color(); let _flash=0;   // 轉場閃白
+function applyMood(prog){
+  let a=MOODS[0], b=MOODS[MOODS.length-1];
+  for(let i=0;i<MOODS.length-1;i++){ if(prog>=MOODS[i].p && prog<=MOODS[i+1].p){ a=MOODS[i]; b=MOODS[i+1]; break; } }
+  const t=THREE.MathUtils.clamp((prog-a.p)/Math.max(1e-4,(b.p-a.p)),0,1), s=t*t*(3-2*t), L=(x,y)=>x+(y-x)*s;
+  _fogC.setRGB(L(a.fog[0],b.fog[0]), L(a.fog[1],b.fog[1]), L(a.fog[2],b.fog[2]));
+  scene.fog.color.copy(_fogC); scene.fog.density = L(a.fogD,b.fogD);
+  renderer.toneMappingExposure = L(a.expo,b.expo);
+  postFX.uniforms.uTint.value.set(L(a.tint[0],b.tint[0]), L(a.tint[1],b.tint[1]), L(a.tint[2],b.tint[2]));
+  postFX.uniforms.uSat.value = L(a.sat,b.sat);
+  return L(a.bloom,b.bloom);   // 給 bloom.strength 當基準
+}
 
 // ── Lenis ──
 const lenis=new Lenis({ smoothWheel:true, lerp:0.08 });
@@ -713,7 +763,9 @@ lenis.on('scroll', e=>{ target = e.limit>0 ? e.scroll/e.limit : 0; });
 const mouse={ x:0,y:0, tx:0,ty:0, cx:innerWidth/2, cy:innerHeight/2 };
 let pulse=0;
 const cDot=document.getElementById('cursor-dot'), cRing=document.getElementById('cursor-ring');
-let ringX=innerWidth/2, ringY=innerHeight/2;
+let ringX=innerWidth/2, ringY=innerHeight/2, ringMag=0;
+let magnetEl=null, lastMagnet=null;   // 磁吸游標：靠近互動元素時游標被吸附放大
+const MAGNET_SEL='.cta,.pcta,.clink,#gEnter,#snd,.d-close,.cfoot a';
 const ray=new THREE.Raycaster();
 const ndcMouse=new THREE.Vector2();
 let hovered=-1, focusIdx=-1;
@@ -748,6 +800,8 @@ addEventListener('pointermove', e=>{
   mouse.tx=(e.clientX/innerWidth-0.5)*2; mouse.ty=(e.clientY/innerHeight-0.5)*2;
   mouse.cx=e.clientX; mouse.cy=e.clientY;
   if(cDot) cDot.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
+  magnetEl = e.target.closest ? e.target.closest(MAGNET_SEL) : null;   // 磁吸目標
+  if(magnetEl!==lastMagnet){ lastMagnet=magnetEl; if(magnetEl) blip(880,0.07,'sine',0.1); }   // hover 微音
   const now=performance.now(); if(now-lastRip>70){ lastRip=now; spawnRipple(e.clientX,e.clientY,0.5); }
 },{passive:true});
 addEventListener('pointerdown', e=>{
@@ -796,6 +850,9 @@ cform.addEventListener('submit', e=>{
 });
 
 const bar=document.getElementById('bar'), stageEl=document.getElementById('stage'), hintEl=document.getElementById('hint');
+// 動態文字：把標題依 <br> 拆成遮罩行，逐行從下方滑升揭露
+function kinetic(el){ el.innerHTML = el.innerHTML.split(/<br\s*\/?>/i).map(l=>`<span class="kl"><span class="ki">${l}</span></span>`).join(''); }
+document.querySelectorAll('.chapter h2, .pricing-title, .contact-title').forEach(kinetic);
 const chapters=[...document.querySelectorAll('.chapter')];
 const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){
   e.target.classList.add('in'); const st=e.target.dataset.stage; if(st) stageEl.textContent=st;
@@ -900,19 +957,30 @@ function enableGyro(){ if(gyroOn) return; gyroOn=true;
 // ── 進場儀式門：一個點擊解鎖權限/音效/觸覺/全螢幕，並觸發光速進場 ──
 lenis.stop();   // 進場前鎖捲動
 let entered=false, lastStage='';
+// 預載進度 0→100%（達 window.load + 最短時長才到 100，再露出 ENTER）
+const gPct=document.getElementById('gPct'), gBarFill=document.getElementById('gBarFill'), gateEl=document.getElementById('gate');
+let _loadP=0, _pageLoaded=document.readyState==='complete'; const _t0=performance.now();
+addEventListener('load',()=>{ _pageLoaded=true; });
+const _pi=setInterval(()=>{   // 用 setInterval：不受背景分頁 rAF 暫停影響，預載一定會跑完
+  const cap=(_pageLoaded && performance.now()-_t0>1300)?100:92;
+  _loadP += Math.max(0.8,(cap-_loadP)*0.07); if(_loadP>cap) _loadP=cap;
+  gPct.textContent=Math.floor(_loadP); gBarFill.style.width=_loadP+'%';
+  if(_loadP>=100){ gateEl.classList.add('ready'); clearInterval(_pi); }
+}, 28);
 function enterUniverse(){
-  if(entered) return; entered=true;
+  if(entered || !gateEl.classList.contains('ready')) return; entered=true;
   initAudio(); if(actx.state==='suspended') actx.resume(); setSnd(true);
   buzz([16,40,26]); whoosh();
   if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function')
     DeviceOrientationEvent.requestPermission().then(s=>{ if(s==='granted') enableGyro(); }).catch(()=>{});
   else enableGyro();
-  warp = 1;
+  warp = 1.35;
+  document.getElementById('hyper').classList.add('go');   // 放射光束衝刺
   const fl=document.getElementById('flash');
-  fl.style.transition='none'; fl.style.opacity='0.85';
-  requestAnimationFrame(()=>{ fl.style.transition='opacity 1.15s ease'; fl.style.opacity='0'; });
-  document.getElementById('gate').classList.add('gone');
-  setTimeout(()=>{ lenis.start(); const s=document.getElementById('snd'); s.style.display='flex'; s.classList.add('on'); }, 650);
+  fl.style.transition='none'; fl.style.opacity='0.9';
+  requestAnimationFrame(()=>{ fl.style.transition='opacity 1.2s ease'; fl.style.opacity='0'; });
+  gateEl.classList.add('gone');
+  setTimeout(()=>{ lenis.start(); const s=document.getElementById('snd'); s.style.display='flex'; s.classList.add('on'); }, 700);
 }
 document.getElementById('gEnter').addEventListener('click', enterUniverse);
 document.getElementById('snd').addEventListener('click', ()=>{ setSnd(!sndOn); buzz(12); });
@@ -933,7 +1001,12 @@ function animate(time){
   if(hintEl){ const hide=prog>0.85; hintEl.style.opacity=hide?'0':''; hintEl.style.animation=hide?'none':''; }
   pulse*=Math.exp(-3.5*dt);
   warp *= Math.exp(-2.6*dt);   // 光速進場衝擊衰減
-  if(entered && stageEl.textContent!==lastStage){ lastStage=stageEl.textContent; blip(430,0.2,'sine',0.13); buzz(8); }   // 段落切換音/震
+  if(entered && stageEl.textContent!==lastStage){ lastStage=stageEl.textContent; blip(430,0.2,'sine',0.13); buzz(8); whoosh(); _flash=0.14; }   // 段落切換：音/震/閃白轉場
+
+  // 每世界氛圍（色調/霧/曝光/飽和）+ 轉場閃白
+  const bloomBase = applyMood(prog);
+  _flash *= Math.exp(-3.2*dt);
+  postFX.uniforms.uFlash.value = _flash + warp*0.18;
 
   // 陀螺儀體感：傾斜手機 → 接管視差（取代觸控裝置沒有的滑鼠視差）
   if(gyroOn){ mouse.tx=gyro.x; mouse.ty=gyro.y; }
@@ -944,8 +1017,12 @@ function animate(time){
   camera.fov=damp(camera.fov,fovTarget, warp>0.02?13:5, dt); camera.updateProjectionMatrix();
 
   mouse.x=damp(mouse.x,mouse.tx,3.0,dt); mouse.y=damp(mouse.y,mouse.ty,3.0,dt);
-  ringX=damp(ringX,mouse.cx,14,dt); ringY=damp(ringY,mouse.cy,14,dt);
-  if(cRing) cRing.style.transform=`translate(${ringX}px,${ringY}px)`;
+  // 磁吸游標：靠近互動元素時被吸向其中心並放大
+  let rtx=mouse.cx, rty=mouse.cy, mag=0;
+  if(magnetEl){ const r=magnetEl.getBoundingClientRect(); rtx=mouse.cx+(r.left+r.width/2-mouse.cx)*0.4; rty=mouse.cy+(r.top+r.height/2-mouse.cy)*0.4; mag=1; }
+  ringMag = damp(ringMag, mag, 12, dt);
+  ringX=damp(ringX,rtx,18,dt); ringY=damp(ringY,rty,18,dt);
+  if(cRing) cRing.style.transform=`translate(${ringX}px,${ringY}px) scale(${(1+ringMag*0.8).toFixed(3)})`;
 
   // shader 時間
   skyUni.uTime.value=clock; postFX.uniforms.uTime.value=clock;
@@ -959,7 +1036,7 @@ function animate(time){
   coreP.userData.uni.uTime.value=clock; coreP.userData.uni.uPulse.value=pulse;
   coreP.userData.gUni.uPulse.value=pulse;
   ring.rotation.z += dt*0.05;
-  bloom.strength=0.85+pulse*0.6+Math.sin(clock*0.6)*0.06 + warp*1.5;
+  bloom.strength = bloomBase + pulse*0.6 + Math.sin(clock*0.6)*0.06 + warp*1.5;
 
   // raycast 懸停
   hovered = castPlanets();
