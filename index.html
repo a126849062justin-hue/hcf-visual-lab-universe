@@ -162,6 +162,21 @@
   .wcard:hover .wmock img{ transform:scale(1.07); filter:saturate(1.12) brightness(1.04); }
   .wcat{ font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:.35rem; }
   .wdesc{ font-size:.8rem; color:#8294b8; line-height:1.65; }
+  /* ── 精選漂浮案例：鹿本門 LOGO 行星 + 月餅衛星漂浮 ── */
+  .ms-feat{ font-size:.64rem; letter-spacing:.4em; text-transform:uppercase; color:#C69C6D; margin:.4rem 0 .2rem; }
+  .moonsys{ position:relative; width:100%; max-width:780px; height:clamp(340px,44vw,470px); margin:1rem auto 2.4rem; }
+  .ms-glow{ position:absolute; left:50%; top:50%; width:60%; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%;
+    background:radial-gradient(circle, rgba(212,175,55,.30), rgba(198,156,109,.06) 48%, transparent 70%); filter:blur(8px); pointer-events:none; }
+  .ms-logo{ position:absolute; left:50%; top:50%; transform:translate(calc(-50% + var(--px,0px)), calc(-50% + var(--py,0px))); transition:transform .35s ease-out; z-index:3; }
+  .ms-logo img{ display:block; width:clamp(150px,21vw,208px); aspect-ratio:1; object-fit:cover; border-radius:50%;
+    box-shadow:0 0 56px rgba(212,175,55,.42), 0 22px 54px rgba(0,0,0,.55); animation:msFloatL 7s ease-in-out infinite; }
+  .ms-item{ position:absolute; left:50%; top:50%; z-index:2;
+    transform:translate(calc(-50% + var(--x) + var(--px,0px)), calc(-50% + var(--y) + var(--py,0px))) scale(var(--s)); transition:transform .4s ease-out; }
+  .ms-item img{ display:block; width:clamp(72px,11vw,118px); aspect-ratio:1; object-fit:cover; border-radius:24%;
+    box-shadow:0 14px 36px rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.12); animation:msFloat 8s ease-in-out infinite; }
+  @keyframes msFloat{ 0%,100%{ transform:translateY(0) rotate(-2deg) } 50%{ transform:translateY(-16px) rotate(2deg) } }
+  @keyframes msFloatL{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-12px) } }
+  @media (prefers-reduced-motion:reduce){ .ms-item img,.ms-logo img{ animation:none; } }
   @media (max-width:900px){ .wgrid{ grid-template-columns:repeat(2,1fr); max-width:560px; } }
   @media (prefers-reduced-motion:reduce){ .wcard.warp{ animation:none; } .wcard:not(.warp){ opacity:1; } }
   /* 進度條 + 章節導引 */
@@ -362,9 +377,20 @@
         <div class="badge">Works · 作品星系</div>
         <h3 class="works-title">不只完成作品<br>而是讓品牌<span class="accent">被選擇</span></h3>
         <p class="works-sub">每個案例都是品牌策略 × 視覺設計 × 使用者體驗的整合成果。專案背景 · 設計方向 · 視覺特色 · 改版前後 · 轉換重點。</p>
+        <div class="ms-feat">Featured · 鹿本門月餅</div>
+      </div>
+      <div class="moonsys" id="moonsys">
+        <div class="ms-glow"></div>
+        <div class="ms-item" data-d="1.6" style="--x:-42%;--y:-30%;--s:.92"><img src="works/m1.jpg" alt="" loading="lazy" style="animation-delay:0s"></div>
+        <div class="ms-item" data-d="2.3" style="--x:44%;--y:-22%;--s:1.06"><img src="works/m2.jpg" alt="" loading="lazy" style="animation-delay:-2.2s"></div>
+        <div class="ms-item" data-d="1.1" style="--x:-50%;--y:24%;--s:.8"><img src="works/m3.jpg" alt="" loading="lazy" style="animation-delay:-4s"></div>
+        <div class="ms-item" data-d="2.7" style="--x:46%;--y:30%;--s:.95"><img src="works/m4.jpg" alt="" loading="lazy" style="animation-delay:-1s"></div>
+        <div class="ms-item" data-d="1.0" style="--x:-8%;--y:-44%;--s:.72"><img src="works/m5.jpg" alt="" loading="lazy" style="animation-delay:-3.3s"></div>
+        <div class="ms-item" data-d="3.0" style="--x:16%;--y:42%;--s:.78"><img src="works/m6.jpg" alt="" loading="lazy" style="animation-delay:-5s"></div>
+        <div class="ms-logo" data-d="0.5"><img src="works/lbm-logo.png" alt="鹿本門" loading="lazy"></div>
       </div>
       <div class="wgrid">
-        <div class="wcard" style="--wc:#C69C6D"><div class="wmock"><img src="works/mooncake.jpg" alt="鹿本門月餅" loading="lazy"></div><div class="wcat">鹿本門月餅</div><div class="wdesc">和風職人月餅一頁式 · 流心 lava 特效 · 深淺奢華切換</div></div>
+        <div class="wcard" style="--wc:#C69C6D"><div class="wmock"><img src="works/mooncake.jpg" alt="鹿本門月餅 流心月餅" loading="lazy" style="object-position:center 42%"></div><div class="wcat">鹿本門月餅</div><div class="wdesc">和風職人月餅一頁式 · 流心 lava 特效 · 深淺奢華切換</div></div>
         <div class="wcard" style="--wc:#D4AF37"><div class="wmock"><img src="works/lucky2.jpg" alt="好運小姐" loading="lazy"></div><div class="wcat">好運小姐</div><div class="wdesc">開運品牌官網 · 金色水晶願室 · 命理 × 視覺整合</div></div>
         <div class="wcard" style="--wc:#E74C3C"><div class="wmock"><img src="works/combat.jpg" alt="HCF 新竹格鬥" loading="lazy"></div><div class="wcat">新竹格鬥 HCF</div><div class="wdesc">格鬥品牌官網 · 粗體標語張力 · 戰鬥感視覺</div></div>
         <div class="wcard" style="--wc:#FF5A3C"><div class="wmock"><img src="works/hcf2026.jpg" alt="HCF Combat" loading="lazy"></div><div class="wcat">HCF Combat</div><div class="wdesc">拳擊課程網站 · 攝影主視覺 · 報名轉換導向</div></div>
@@ -960,6 +986,17 @@ if(matchMedia('(hover:hover) and (pointer:fine)').matches){
     }, {passive:true});
     card.addEventListener('pointerleave', ()=>{ card.style.transform=''; });
   });
+}
+
+// 精選漂浮案例：鹿本門 LOGO + 月餅衛星 依游標做多層深度視差
+const moonsys=document.getElementById('moonsys');
+if(moonsys){
+  const items=[...moonsys.querySelectorAll('[data-d]')];
+  moonsys.addEventListener('pointermove', e=>{ const r=moonsys.getBoundingClientRect();
+    const mx=(e.clientX-r.left)/r.width-0.5, my=(e.clientY-r.top)/r.height-0.5;
+    for(const it of items){ const d=parseFloat(it.dataset.d)||1; it.style.setProperty('--px',(mx*d*-16).toFixed(1)+'px'); it.style.setProperty('--py',(my*d*-16).toFixed(1)+'px'); }
+  }, {passive:true});
+  moonsys.addEventListener('pointerleave', ()=>{ for(const it of items){ it.style.setProperty('--px','0px'); it.style.setProperty('--py','0px'); } });
 }
 
 // ════════ 手機沉浸包：進場儀式 + 陀螺儀體感 + 觸覺 + 程序化音效 + 光速進場 ════════
